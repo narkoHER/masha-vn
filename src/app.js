@@ -1,995 +1,2400 @@
 import { sound } from "./audio.js";
-import { buildIntroScript, buildNightReturnSequence } from "./story.js";
-import { INITIAL_BAG, SANDBOX_ROOMS, getHotspotSequence } from "./sandbox.js";
+import { FxEngine } from "./fx.js";
+import {
+  ITEMS_CATALOG,
+  CLUES_CATALOG,
+  MASHA_WORK_PHONE_CHATS,
+  SANDBOX_ROOMS,
+  countExploredSandboxGoals,
+  getHotspotSequence,
+  buildPostPhoneUnlockSequence
+} from "./sandbox.js";
+import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js";
 
-// ==================== TELEGRAM WEBAPP & HELPERS ====================
-const tg = window.Telegram?.WebApp;
-const tgUserId = tg?.initDataUnsafe?.user?.id || "local";
-const SAVE_KEY = `masha-vn-mvp-v1:${tgUserId}`;
+// Условная подгрузка полифилла Popover API строго по современному стандарту
+let popoverReadyPromise = Promise.resolve();
+if (typeof HTMLElement !== "undefined" && !Object.hasOwn(HTMLElement.prototype, "popover")) {
+  popoverReadyPromise = import("https://esm.sh/@oddbird/popover-polyfill@0.6.1").catch(() => {});
+}
 
-function initTelegramSDK() {
+const SAVE_KEY = "masha_vn_v2_save";
+const PREFS_KEY = "masha_vn_v2_prefs";
+const MASHA_PIN_CODE = "1408";
+
+const SCRIPT = buildPrologueScript();
+
+// Кэш резолвинга иллюстраций (поддержка параллельного рендера ./assets/v2/* -> fallback ./assets/*)
+const assetCache = new Map();
+let hasV2AvatarSheet = true;
+let v2AvatarSheetUrl = "./assets/v2/ava_characters_v2.webp";
+
+// Состояние сессии и UI
+let prefs = loadPrefs();
+let state = createInitialState("Артём");
+let fxEngine = null;
+
+let ephemeralQueue = [];
+let activeChoices = null;
+let lastSpokenContext = "";
+
+let typingTimer = null;
+let isTyping = false;
+let fullTargetText = "";
+
+let mcPhoneActiveTab = "scales";
+let mcActiveChatId = null;
+let mashaActiveChatId = null;
+let pinBuffer = "";
+let pendingPostPhoneSequence = false;
+let resetConfirmArmed = false;
+
+let toastSeq = 0;
+const deferredToasts = [];
+
+// ==================== TELEGRAM MINI APP SAFE-AREA & CLOUD SYNC ====================
+const tg = window.Telegram?.WebApp || null;
+
+function initTelegramMiniApp() {
   if (!tg) return;
   try {
     tg.ready();
     tg.expand();
     tg.disableVerticalSwipes?.();
-    tg.setHeaderColor?.("#090910");
-    tg.setBackgroundColor?.("#090910");
+    tg.setHeaderColor?.("#08090e");
+    tg.setBackgroundColor?.("#08090e");
+    syncTelegramSafeAreas();
+    tg.onEvent?.("safeAreaChanged", syncTelegramSafeAreas);
+    tg.onEvent?.("contentSafeAreaChanged", syncTelegramSafeAreas);
+    tg.onEvent?.("viewportChanged", syncTelegramSafeAreas);
   } catch {}
 }
 
-function haptic(kind = "light") {
+function syncTelegramSafeAreas() {
+  if (!tg) return;
+  const root = document.documentElement;
+  const sa = tg.safeAreaInset || {};
+  const csa = tg.contentSafeAreaInset || {};
+  if (typeof sa.top === "number") root.style.setProperty("--tg-safe-area-inset-top", `${sa.top}px`);
+  if (typeof sa.bottom === "number") root.style.setProperty("--tg-safe-area-inset-bottom", `${sa.bottom}px`);
+  if (typeof csa.top === "number") root.style.setProperty("--tg-content-safe-area-inset-top", `${csa.top}px`);
+  if (typeof csa.bottom === "number") {
+    root.style.setProperty("--tg-content-safe-area-inset-bottom", `${csa.bottom}px`);
+  }
+}
+
+function haptic(type = "light") {
   try {
     if (!tg?.HapticFeedback) return;
-    if (kind === "success" || kind === "warning" || kind === "error") {
-      tg.HapticFeedback.notificationOccurred(kind);
+    if (type === "success" || type === "warning" || type === "error") {
+      tg.HapticFeedback.notificationOccurred(type);
     } else {
-      tg.HapticFeedback.impactOccurred(kind);
+      tg.HapticFeedback.impactOccurred(type);
     }
   } catch {}
 }
 
-function withViewTransition(mutator, focusEl = null) {
-  if (!document.startViewTransition) {
-    mutator();
-    focusEl?.focus({ preventScroll: true });
-    return;
-  }
-  const vt = document.startViewTransition(() => mutator());
-  vt.finished.finally(() => {
-    focusEl?.focus({ preventScroll: true });
-  });
-}
-
-// Safari / WebKit fallback для <dialog closedby="any">
-function setupDialogLightDismissFallbacks() {
-  if ("closedBy" in HTMLDialogElement.prototype) return;
-  const isOutside = (ev, dlg) => {
-    const r = dlg.getBoundingClientRect();
-    return ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
-  };
-  for (const dlg of document.querySelectorAll('dialog[closedby="any"]')) {
-    let downOutside = false;
-    dlg.addEventListener("pointerdown", (ev) => {
-      downOutside = isOutside(ev, dlg);
-    });
-    dlg.addEventListener("pointerup", (ev) => {
-      if (downOutside && isOutside(ev, dlg)) dlg.close();
-      downOutside = false;
-    });
-  }
-}
-
-// ==================== ИГРОВОЕ СОСТОЯНИЕ ====================
-function createFreshState(playerName = "Артём") {
-  return {
-    playerName,
-    mode: "vn", // "vn" | "sandbox" | "ended"
-    blockId: "start",
-    stepIndex: 0,
-    currentRoom: "living",
-    stars: 0,
-    stats: {
-      affection: 1,
-      trust: 0,
-      boldness: 0
-    },
-    clues: [],
-    bag: structuredClone(INITIAL_BAG),
-    visitedSpots: [],
-    flags: {
-      cafeAsked: {},
-      pinTries: 0,
-      phoneUnlocked: false,
-      sawPhotoDate: false,
-      stolePanties: false,
-      pantiesResolved: false,
-      foundMaskCard: false
-    },
-    log: []
-  };
-}
-
-let state = createFreshState();
-const scriptBlocks = buildIntroScript();
-
-// Очередь временных шагов (для хотспотов песочницы и финальной сцены)
-let activeSequence = null;
-let activeSeqIndex = 0;
-let onSequenceDone = null;
-
-// Эффект печатной машинки
-let typingTimer = null;
-let fullCurrentText = "";
-let isTyping = false;
-
-// ==================== DOM ЭЛЕМЕНТЫ ====================
-const el = {
-  app: document.getElementById("app"),
-  titleScreen: document.getElementById("titleScreen"),
-  gameScreen: document.getElementById("gameScreen"),
-  endingScreen: document.getElementById("endingScreen"),
-
-  btnNewGame: document.getElementById("btnNewGame"),
-  btnContinue: document.getElementById("btnContinue"),
-  btnTitleDossier: document.getElementById("btnTitleDossier"),
-  btnResetSave: document.getElementById("btnResetSave"),
-  titleSoundBtn: document.getElementById("titleSoundBtn"),
-
-  btnHome: document.getElementById("btnHome"),
-  btnDossier: document.getElementById("btnDossier"),
-  btnBag: document.getElementById("btnBag"),
-  btnLog: document.getElementById("btnLog"),
-  btnSound: document.getElementById("btnSound"),
-
-  hudStars: document.getElementById("hudStars"),
-  hudClues: document.getElementById("hudClues"),
-  hudBagCount: document.getElementById("hudBagCount"),
-  toastStack: document.getElementById("toastStack"),
-
-  stageViewport: document.getElementById("stageViewport"),
-  stageBg: document.getElementById("stageBg"),
-  stagePlaceholder: document.getElementById("stagePlaceholder"),
-  placeholderName: document.getElementById("placeholderName"),
-  placeholderDesc: document.getElementById("placeholderDesc"),
-  spriteLayer: document.getElementById("spriteLayer"),
-  stageSprite: document.getElementById("stageSprite"),
-  propCardOverlay: document.getElementById("propCardOverlay"),
-  propCardImg: document.getElementById("propCardImg"),
-  hotspotLayer: document.getElementById("hotspotLayer"),
-  sandboxBanner: document.getElementById("sandboxBanner"),
-  sandboxRoomTitle: document.getElementById("sandboxRoomTitle"),
-
-  vnBottomPanel: document.getElementById("vnBottomPanel"),
-  choicePanel: document.getElementById("choicePanel"),
-  dialogueBox: document.getElementById("dialogueBox"),
-  mcAvatarWrap: document.getElementById("mcAvatarWrap"),
-  mcAvatarSprite: document.getElementById("mcAvatarSprite"),
-  speakerName: document.getElementById("speakerName"),
-  speakerTag: document.getElementById("speakerTag"),
-  dialogueText: document.getElementById("dialogueText"),
-  tapHint: document.getElementById("tapHint"),
-  roomNav: document.getElementById("roomNav"),
-
-  nameDialog: document.getElementById("nameDialog"),
-  playerNameInput: document.getElementById("playerNameInput"),
-  dossierDialog: document.getElementById("dossierDialog"),
-  dossierContent: document.getElementById("dossierContent"),
-  bagDialog: document.getElementById("bagDialog"),
-  bagList: document.getElementById("bagList"),
-  logDialog: document.getElementById("logDialog"),
-  logList: document.getElementById("logList"),
-  phoneDialog: document.getElementById("phoneDialog"),
-  phoneBody: document.getElementById("phoneBody"),
-  confirmSleepDialog: document.getElementById("confirmSleepDialog"),
-  sleepDesc: document.getElementById("sleepDesc"),
-
-  endingFlavor: document.getElementById("endingFlavor"),
-  endingStatsGrid: document.getElementById("endingStatsGrid"),
-  btnReplaySandbox: document.getElementById("btnReplaySandbox"),
-  btnRestartFull: document.getElementById("btnRestartFull")
-};
-
-// ==================== СОХРАНЕНИЯ ====================
-function saveState() {
+// ==================== НАЧАЛЬНЫЙ GAMESTATE V2 И СОХРАНЕНИЯ ====================
+function loadPrefs() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    refreshContinueButton();
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        // При первом запуске строго muted: true
+        muted: typeof parsed.muted === "boolean" ? parsed.muted : true,
+        textSpeed: parsed.textSpeed === "instant" ? "instant" : "smooth",
+        motionPaused: Boolean(parsed.motionPaused)
+      };
+    }
+  } catch {}
+  return { muted: true, textSpeed: "smooth", motionPaused: false };
+}
+
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch {}
 }
 
-function loadSavedState() {
+function createInitialState(playerName = "Артём") {
+  const cleanName = (playerName || "Артём").trim().slice(0, 20) || "Артём";
+  return {
+    version: 2,
+    started: false,
+    prologueCompleted: false,
+    mode: "story", // "story" | "sandbox" | "epilogue"
+    blockId: "Intro_1",
+    stepIndex: 0,
+    location: "ПРОХОДНАЯ ИНТЕРНАТА • 08:45",
+    lastBg: "./assets/v2/bg_orphanage_gates.webp",
+    lastCam: "zoom-slow",
+    lastFxShader: "rain_exterior",
+    lastAmbience: "rain",
+    lastSprite: null,
+    lastVideo: null,
+    player: {
+      name: cleanName,
+      alpha: 0,
+      vanilla: 0,
+      vector: 0
+    },
+    masha: {
+      stars: 0,
+      loyalty: 0
+    },
+    risk: 0,
+    relations: {
+      katya: 0
+    },
+    tutorialsSeen: {
+      scales: false
+    },
+    phoneUnread: false,
+    items: ["orphanage_referral", "father_watch"],
+    clues: [],
+    roomProps: {
+      living_table_clue: { taken: false },
+      kitchen_calla_clue: { taken: false },
+      bathroom_lace_dilemma: { taken: false },
+      bedroom_swing_photo: { taken: false },
+      bedroom_masha_phone: { taken: false }
+    },
+    sandbox: {
+      currentRoom: "living"
+    },
+    flags: {
+      katya_warm_start: false,
+      intro2_fantasy: null,
+      kinship_proven: false,
+      cafeTopics: {},
+      touched_lace: false,
+      saw_lake_photo_date: false,
+      masha_phone_unlocked: false,
+      masha_chats_read: {},
+      intro5_branch: null,
+      morning_high_loyalty: false,
+      lenka_met: false
+    },
+    mcChats: {
+      katya: {
+        id: "katya",
+        title: "Катя (Интернат)",
+        subtitle: "Учебный корпус • личный контакт",
+        messages: [
+          {
+            dir: "in",
+            time: "вчера, 23:14",
+            text: "Соколов, только попробуй завтра уехать в город по-английски! У меня для твоих часов кое-что готово."
+          }
+        ]
+      },
+      masha: {
+        id: "masha",
+        title: "Маша (Старый номер)",
+        subtitle: "Записан со слов соседки тёти Вали",
+        messages: []
+      }
+    },
+    backlog: [],
+    toastHistory: []
+  };
+}
+
+function saveGame() {
+  if (!state.started) return;
+  try {
+    const serialized = JSON.stringify(state);
+    localStorage.setItem(SAVE_KEY, serialized);
+    tg?.CloudStorage?.setItem?.(SAVE_KEY, serialized, () => {});
+  } catch {}
+  refreshTitleButtons();
+}
+
+function loadSavedGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function refreshContinueButton() {
-  const saved = loadSavedState();
-  el.btnContinue.hidden = !saved;
-}
-
-// ==================== API ДЛЯ ЭФФЕКТОВ СЦЕНАРИЯ ====================
-const scriptApi = {
-  toast(msg, tone = "default") {
-    showToast(msg, tone);
-  },
-  fx(name) {
-    sound.fx(name);
-  },
-  addClue(id, label) {
-    if (!state.clues.some((c) => c.id === id)) {
-      state.clues.push({ id, label });
-      sound.fx("achiev");
-      haptic("success");
-      showToast(`🔍 Улика (${state.clues.length}/4): ${label}`, "clue");
-      updateHUD();
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.version === 2 && parsed.started) {
+      return hydrateState(parsed);
     }
-  },
-  addItem(item) {
-    if (!state.bag.some((b) => b.id === item.id)) {
-      state.bag.push(item);
-      updateHUD();
-    }
-  }
-};
-
-function showToast(message, tone = "default") {
-  const div = document.createElement("div");
-  div.className = "toast-item";
-  div.dataset.tone = tone;
-  div.textContent = message;
-  el.toastStack.appendChild(div);
-  if (tone !== "clue") sound.fx("notify");
-  setTimeout(() => {
-    div.remove();
-  }, 3200);
+  } catch {}
+  return null;
 }
 
-function updateHUD() {
-  const filled = "★".repeat(state.stars);
-  const empty = "☆".repeat(Math.max(0, 5 - state.stars));
-  el.hudStars.textContent = `${filled}${empty}`;
-  el.hudClues.textContent = `🔍 ${state.clues.length}/4`;
-  el.hudBagCount.textContent = String(state.bag.length);
-}
-
-// ==================== РЕНДЕР КАДРА И ДИАЛОГА ====================
-function formatText(str) {
-  return (str || "").replaceAll("{mc}", state.playerName);
-}
-
-function setStageImage(src, fallbackLabel = "") {
-  if (!src) return;
-  el.stagePlaceholder.hidden = true;
-  if (el.stageBg.getAttribute("src") !== src) {
-    el.stageBg.src = src;
-  }
-  el.stageBg.onerror = () => {
-    el.stagePlaceholder.hidden = false;
-    el.placeholderName.textContent = fallbackLabel || src;
-    el.placeholderDesc.textContent = "Ассет подгружается или временно заменён заглушкой.";
+function hydrateState(saved) {
+  const base = createInitialState(saved?.player?.name || "Артём");
+  return {
+    ...base,
+    ...saved,
+    player: { ...base.player, ...(saved.player || {}) },
+    masha: { ...base.masha, ...(saved.masha || {}) },
+    relations: { ...base.relations, ...(saved.relations || {}) },
+    tutorialsSeen: { ...base.tutorialsSeen, ...(saved.tutorialsSeen || {}) },
+    roomProps: { ...base.roomProps, ...(saved.roomProps || {}) },
+    sandbox: { ...base.sandbox, ...(saved.sandbox || {}) },
+    flags: { ...base.flags, ...(saved.flags || {}) },
+    mcChats: saved.mcChats || base.mcChats,
+    backlog: Array.isArray(saved.backlog) ? saved.backlog.slice(-45) : [],
+    toastHistory: Array.isArray(saved.toastHistory) ? saved.toastHistory.slice(-35) : []
   };
 }
 
-function startTypewriter(text) {
-  clearInterval(typingTimer);
-  fullCurrentText = text;
-  el.dialogueText.textContent = "";
-  isTyping = true;
-  let idx = 0;
+function clearSavedGame() {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+    tg?.CloudStorage?.removeItem?.(SAVE_KEY, () => {});
+  } catch {}
+}
 
-  typingTimer = setInterval(() => {
-    idx += 2;
-    if (idx >= fullCurrentText.length) {
-      el.dialogueText.textContent = fullCurrentText;
-      isTyping = false;
-      clearInterval(typingTimer);
+// ==================== СКЛОНЕНИЯ ИМЕНИ ГЕРОЯ ====================
+function formatText(str) {
+  if (!str) return "";
+  const name = state.player?.name || "Артём";
+  const isCanonical = name.toLowerCase() === "артём" || name.toLowerCase() === "артем";
+
+  const forms = isCanonical
+    ? {
+        mc: "Артём",
+        mc_gen: "Артёма",
+        mc_dat: "Артёму",
+        mc_acc: "Артёма",
+        mc_ins: "Артёмом",
+        mc_dim: "Тёма",
+        mc_dim_k: "Тёмка",
+        mc_acc_short: "Тёму"
+      }
+    : {
+        mc: name,
+        mc_gen: name,
+        mc_dat: name,
+        mc_acc: name,
+        mc_ins: name,
+        mc_dim: name,
+        mc_dim_k: name,
+        mc_acc_short: name
+      };
+
+  return str.replace(/\{(mc(?:_[a-z_]+)?)\}/g, (_, key) => forms[key] || name);
+}
+
+// ==================== УМНАЯ ПОДГРУЗКА V2 АССЕТОВ С FALLBACK ====================
+function probeImage(url) {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(false);
       return;
     }
-    el.dialogueText.textContent = fullCurrentText.slice(0, idx);
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+async function resolveAssetUrl(requestedPath) {
+  if (!requestedPath) return null;
+  if (assetCache.has(requestedPath)) return assetCache.get(requestedPath);
+
+  const candidates = [requestedPath];
+  if (requestedPath.startsWith("./assets/v2/") && requestedPath.endsWith(".webp")) {
+    candidates.push(requestedPath.replace(/\.webp$/, ".png"));
+  }
+  if (ASSET_FALLBACKS[requestedPath]) {
+    candidates.push(ASSET_FALLBACKS[requestedPath]);
+  }
+
+  for (const candidate of candidates) {
+    // eslint-disable-next-line no-await-in-loop
+    const ok = await probeImage(candidate);
+    if (ok) {
+      assetCache.set(requestedPath, candidate);
+      return candidate;
+    }
+  }
+
+  assetCache.set(requestedPath, null);
+  return null;
+}
+
+async function initOptionalV2Assets() {
+  const coverEl = document.getElementById("titleCoverImg");
+  if (coverEl) {
+    coverEl.addEventListener(
+      "error",
+      () => {
+        coverEl.src = "./assets/title_cover.webp";
+      },
+      { once: true }
+    );
+  }
+
+  let foundSheet = false;
+  for (const sheetCandidate of [
+    "./assets/v2/ava_characters_v2.webp",
+    "./assets/v2/ava_characters_v2.png"
+  ]) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await probeImage(sheetCandidate)) {
+      hasV2AvatarSheet = true;
+      v2AvatarSheetUrl = sheetCandidate;
+      foundSheet = true;
+      break;
+    }
+  }
+  if (!foundSheet) {
+    hasV2AvatarSheet = false;
+  }
+}
+
+// ==================== DOM ССЫЛКИ ====================
+const dom = {
+  appRoot: document.getElementById("appRoot"),
+  titleScreen: document.getElementById("titleScreen"),
+  gameScreen: document.getElementById("gameScreen"),
+
+  titleSoundBtn: document.getElementById("titleSoundBtn"),
+  btnContinue: document.getElementById("btnContinue"),
+  continueMeta: document.getElementById("continueMeta"),
+  btnNewGame: document.getElementById("btnNewGame"),
+  btnResetTitle: document.getElementById("btnResetTitle"),
+
+  hudLocationBadge: document.getElementById("hudLocationBadge"),
+  btnMcPhone: document.getElementById("btnMcPhone"),
+  phoneUnreadDot: document.getElementById("phoneUnreadDot"),
+  btnSound: document.getElementById("btnSound"),
+  btnMotion: document.getElementById("btnMotion"),
+  btnCleanFrame: document.getElementById("btnCleanFrame"),
+  btnMenu: document.getElementById("btnMenu"),
+
+  stageViewport: document.getElementById("stageViewport"),
+  stageBgBack: document.getElementById("stageBgBack"),
+  stageBg: document.getElementById("stageBg"),
+  stageVideo: document.getElementById("stageVideo"),
+  stagePlaceholder: document.getElementById("stagePlaceholder"),
+  stagePlaceholderLabel: document.getElementById("stagePlaceholderLabel"),
+  roomPropsLayer: document.getElementById("roomPropsLayer"),
+  stageSprite: document.getElementById("stageSprite"),
+  fxCanvas: document.getElementById("fxCanvas"),
+
+  propCardOverlay: document.getElementById("propCardOverlay"),
+  propCardImg: document.getElementById("propCardImg"),
+
+  incomingMsgOverlay: document.getElementById("incomingMsgOverlay"),
+  incomingMsgMeta: document.getElementById("incomingMsgMeta"),
+  incomingMsgSender: document.getElementById("incomingMsgSender"),
+  incomingMsgBody: document.getElementById("incomingMsgBody"),
+
+  sandboxBanner: document.getElementById("sandboxBanner"),
+  sandboxRoomTitle: document.getElementById("sandboxRoomTitle"),
+  sandboxGoalCounter: document.getElementById("sandboxGoalCounter"),
+  hotspotLayer: document.getElementById("hotspotLayer"),
+  cleanFrameHint: document.getElementById("cleanFrameHint"),
+
+  epilogueBar: document.getElementById("epilogueBar"),
+  btnReopenEnding: document.getElementById("btnReopenEnding"),
+  btnEpilogueSandbox: document.getElementById("btnEpilogueSandbox"),
+  btnEpilogueRestart: document.getElementById("btnEpilogueRestart"),
+
+  vnBottomPanel: document.getElementById("vnBottomPanel"),
+  choiceWrap: document.getElementById("choiceWrap"),
+  choiceContextQuote: document.getElementById("choiceContextQuote"),
+  choicePanel: document.getElementById("choicePanel"),
+
+  dialogueBox: document.getElementById("dialogueBox"),
+  speakerRow: document.getElementById("speakerRow"),
+  speakerAvatarWrap: document.getElementById("speakerAvatarWrap"),
+  speakerAvatarSprite: document.getElementById("speakerAvatarSprite"),
+  speakerAvatarFallback: document.getElementById("speakerAvatarFallback"),
+  speakerName: document.getElementById("speakerName"),
+  speakerRoleTag: document.getElementById("speakerRoleTag"),
+  dialogueText: document.getElementById("dialogueText"),
+
+  roomNav: document.getElementById("roomNav"),
+  roomTabs: document.getElementById("roomTabs"),
+  btnQuickSleep: document.getElementById("btnQuickSleep"),
+
+  // Модальные окна
+  nameDialog: document.getElementById("nameDialog"),
+  nameForm: document.getElementById("nameForm"),
+  playerNameInput: document.getElementById("playerNameInput"),
+
+  scalesTutorialDialog: document.getElementById("scalesTutorialDialog"),
+
+  mcPhoneDialog: document.getElementById("mcPhoneDialog"),
+  mcPhoneClock: document.getElementById("mcPhoneClock"),
+  mcPhoneBody: document.getElementById("mcPhoneBody"),
+
+  mashaPhoneDialog: document.getElementById("mashaPhoneDialog"),
+  mashaLockScreen: document.getElementById("mashaLockScreen"),
+  mashaPinDots: document.getElementById("mashaPinDots"),
+  mashaPinHint: document.getElementById("mashaPinHint"),
+  mashaPinPad: document.getElementById("mashaPinPad"),
+  mashaUnlockedScreen: document.getElementById("mashaUnlockedScreen"),
+  btnMashaChatBack: document.getElementById("btnMashaChatBack"),
+  mashaHeaderTitle: document.getElementById("mashaHeaderTitle"),
+  mashaMessengerBody: document.getElementById("mashaMessengerBody"),
+
+  clueDetailDialog: document.getElementById("clueDetailDialog"),
+  clueDetailTag: document.getElementById("clueDetailTag"),
+  clueDetailTitle: document.getElementById("clueDetailTitle"),
+  clueDetailImageWrap: document.getElementById("clueDetailImageWrap"),
+  clueDetailImg: document.getElementById("clueDetailImg"),
+  clueDetailSummary: document.getElementById("clueDetailSummary"),
+  clueDetailNote: document.getElementById("clueDetailNote"),
+
+  confirmSleepDialog: document.getElementById("confirmSleepDialog"),
+  confirmSleepSummary: document.getElementById("confirmSleepSummary"),
+  btnConfirmSleepNow: document.getElementById("btnConfirmSleepNow"),
+
+  systemMenuDialog: document.getElementById("systemMenuDialog"),
+  menuHistoryPane: document.getElementById("menuHistoryPane"),
+  menuSettingsPane: document.getElementById("menuSettingsPane"),
+  backlogList: document.getElementById("backlogList"),
+  btnMenuSoundToggle: document.getElementById("btnMenuSoundToggle"),
+  btnTextSpeedToggle: document.getElementById("btnTextSpeedToggle"),
+  btnMenuMotionToggle: document.getElementById("btnMenuMotionToggle"),
+  btnReturnTitle: document.getElementById("btnReturnTitle"),
+  btnResetProgressMenu: document.getElementById("btnResetProgressMenu"),
+
+  endingDialog: document.getElementById("endingDialog"),
+  endingSummaryBody: document.getElementById("endingSummaryBody"),
+  btnEndingOpenPhone: document.getElementById("btnEndingOpenPhone"),
+  btnEndingReplaySandbox: document.getElementById("btnEndingReplaySandbox"),
+  btnEndingRestart: document.getElementById("btnEndingRestart"),
+
+  toastRegion: document.getElementById("toastRegion"),
+  srAnnouncer: document.getElementById("srAnnouncer")
+};
+
+// ==================== TOP-LAYER EXIT FALLBACK + MODAL DIALOG HELPERS ====================
+let supportsDisplayTransition;
+function canTransitionDisplay() {
+  if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+  if (!window.CSS?.supports?.("transition-behavior", "allow-discrete") || !document.body) {
+    return false;
+  }
+  const probe = document.createElement("div");
+  probe.style.cssText = "transition: display 1s allow-discrete !important; display: block;";
+  document.body.appendChild(probe);
+  getComputedStyle(probe).display;
+  probe.style.display = "none";
+  supportsDisplayTransition = getComputedStyle(probe).display === "block";
+  probe.remove();
+  return supportsDisplayTransition;
+}
+
+function supportsTopLayerExit() {
+  return Boolean(window.CSS?.supports?.("overlay", "auto") && canTransitionDisplay());
+}
+
+async function closeTopLayer(element, closeFn) {
+  if (!element) return;
+  if (!supportsTopLayerExit()) {
+    if (element.hasAttribute("data-closing")) return;
+    element.setAttribute("data-closing", "");
+    const animations = element.getAnimations?.({ subtree: true }) || [];
+    if (animations.length > 0) {
+      await Promise.race([
+        Promise.allSettled(animations.map((a) => a.finished)),
+        new Promise((r) => setTimeout(r, 2000))
+      ]);
+    }
+    if (!element.hasAttribute("data-closing")) return;
+    element.removeAttribute("data-closing");
+  }
+  closeFn();
+}
+
+function isAnyModalDialogOpen() {
+  return Boolean(document.querySelector("dialog[open]"));
+}
+
+function openModalDialog(dialogEl) {
+  if (!dialogEl || dialogEl.open) return;
+  dialogEl.removeAttribute("data-closing");
+  dialogEl.showModal();
+}
+
+function closeModalDialog(dialogEl) {
+  if (!dialogEl || !dialogEl.open) return;
+  closeTopLayer(dialogEl, () => {
+    if (dialogEl.open) dialogEl.close();
+  });
+}
+
+function setupDialogs() {
+  const supportsClosedBy = "closedBy" in HTMLDialogElement.prototype;
+  const allDialogs = document.querySelectorAll("dialog.vn-dialog");
+
+  allDialogs.forEach((dialog) => {
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeModalDialog(dialog);
+    });
+
+    // Fallback light-dismiss для браузеров без нативной поддержки closedby="any"
+    if (!supportsClosedBy && dialog.getAttribute("closedby") === "any") {
+      dialog.addEventListener("click", (event) => {
+        if (event.target !== dialog) return;
+        const rect = dialog.getBoundingClientRect();
+        const isDialogContent =
+          rect.top <= event.clientY &&
+          event.clientY <= rect.top + rect.height &&
+          rect.left <= event.clientX &&
+          event.clientX <= rect.left + rect.width;
+        if (isDialogContent) return;
+        closeModalDialog(dialog);
+      });
+    }
+
+    dialog.addEventListener("close", () => {
+      resetConfirmArmed = false;
+      if (dom.btnResetProgressMenu) {
+        dom.btnResetProgressMenu.textContent = "Сбросить сохранение и начать с нуля";
+      }
+
+      if (dialog === dom.mashaPhoneDialog && pendingPostPhoneSequence) {
+        pendingPostPhoneSequence = false;
+        renderSandboxRoom(state.sandbox.currentRoom);
+        startEphemeralSequence(buildPostPhoneUnlockSequence());
+      }
+
+      if (!isAnyModalDialogOpen()) {
+        setTimeout(flushDeferredToasts, 140);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-close-dialog");
+      const targetDialog = document.getElementById(targetId);
+      sound.play("tap");
+      closeModalDialog(targetDialog);
+    });
+  });
+}
+
+// ==================== POPOVER="MANUAL" TOAST SYSTEM ====================
+function announceForScreenReader(text) {
+  if (!text) return;
+  if (typeof document.ariaNotify === "function") {
+    try {
+      document.ariaNotify(text, { interrupt: "none" });
+      return;
+    } catch {}
+  }
+  if (dom.srAnnouncer) {
+    dom.srAnnouncer.textContent = "";
+    requestAnimationFrame(() => {
+      dom.srAnnouncer.textContent = text;
+    });
+  }
+}
+
+function logToastHistory(message) {
+  const timeMatch = (state.location || "").match(/\d{2}:\d{2}/);
+  const stamp = timeMatch ? timeMatch[0] : "Сцена";
+  state.toastHistory.unshift({ text: message, time: stamp });
+  if (state.toastHistory.length > 35) {
+    state.toastHistory.length = 35;
+  }
+}
+
+function enqueueToast(message, tone = "gold") {
+  if (!message) return;
+  logToastHistory(message);
+
+  // Подавляем показ тостов в фоне, пока открыт модальный <dialog>
+  if (isAnyModalDialogOpen()) {
+    deferredToasts.push({ message, tone });
+    return;
+  }
+
+  renderPopoverToast(message, tone);
+}
+
+function flushDeferredToasts() {
+  if (isAnyModalDialogOpen() || deferredToasts.length === 0) return;
+  const batch = deferredToasts.splice(0, deferredToasts.length);
+  batch.forEach((item, idx) => {
+    setTimeout(() => {
+      if (isAnyModalDialogOpen()) {
+        deferredToasts.push(item);
+      } else {
+        renderPopoverToast(item.message, item.tone);
+      }
+    }, idx * 240);
+  });
+}
+
+async function renderPopoverToast(message) {
+  await popoverReadyPromise;
+  if (!dom.toastRegion) return;
+
+  // Ограничиваем одновременно до 3 компактных тостов
+  const active = dom.toastRegion.querySelectorAll(".vn-toast");
+  if (active.length >= 3) {
+    dismissToastElement(active[0]);
+  }
+
+  toastSeq += 1;
+  const toastId = `vnToastItem_${toastSeq}`;
+
+  const toastEl = document.createElement("div");
+  toastEl.id = toastId;
+  toastEl.className = "vn-toast";
+  // Строго через контент-атрибут, а не IDL .popover
+  toastEl.setAttribute("popover", "manual");
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "vn-toast-label";
+
+  const dotSpan = document.createElement("span");
+  dotSpan.className = "vn-toast-dot";
+  dotSpan.setAttribute("aria-hidden", "true");
+
+  const textSpan = document.createElement("span");
+  textSpan.textContent = message;
+
+  labelSpan.append(dotSpan, textSpan);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "vn-toast-close";
+  closeBtn.setAttribute("aria-label", "Скрыть уведомление");
+  closeBtn.setAttribute("popovertarget", toastId);
+  closeBtn.setAttribute("popovertargetaction", "hide");
+  closeBtn.innerHTML = `
+    <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  `;
+
+  toastEl.append(labelSpan, closeBtn);
+  dom.toastRegion.appendChild(toastEl);
+
+  try {
+    toastEl.showPopover?.();
+  } catch {}
+
+  announceForScreenReader(message);
+
+  let timerId = null;
+  const startTimer = () => {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => dismissToastElement(toastEl), 3800);
+  };
+  const pauseTimer = () => clearTimeout(timerId);
+
+  toastEl.addEventListener("pointerenter", pauseTimer);
+  toastEl.addEventListener("pointerleave", startTimer);
+  toastEl.addEventListener("focusin", pauseTimer);
+  toastEl.addEventListener("focusout", startTimer);
+
+  toastEl.addEventListener("toggle", (e) => {
+    if (e.newState === "closed") {
+      clearTimeout(timerId);
+      restoreFocusFromToast(toastEl);
+      setTimeout(() => toastEl.remove(), 260);
+    }
+  });
+
+  closeBtn.addEventListener("click", (e) => {
+    if (!supportsTopLayerExit()) {
+      e.preventDefault();
+      dismissToastElement(toastEl);
+    }
+  });
+
+  startTimer();
+}
+
+function restoreFocusFromToast(toastEl) {
+  if (!toastEl?.contains(document.activeElement)) return;
+  const remainingCloseBtns = Array.from(
+    dom.toastRegion?.querySelectorAll(".vn-toast:not([data-closing]) .vn-toast-close") || []
+  ).filter((btn) => !toastEl.contains(btn));
+  if (remainingCloseBtns.length > 0) {
+    remainingCloseBtns[remainingCloseBtns.length - 1].focus({ preventScroll: true });
+    return;
+  }
+  if (!dom.dialogueBox.hidden) {
+    dom.dialogueBox.focus({ preventScroll: true });
+  } else {
+    dom.btnMcPhone.focus({ preventScroll: true });
+  }
+}
+
+function dismissToastElement(toastEl) {
+  if (!toastEl || !toastEl.isConnected || toastEl.hasAttribute("data-closing")) return;
+  restoreFocusFromToast(toastEl);
+  closeTopLayer(toastEl, () => {
+    try {
+      if (typeof toastEl.hidePopover === "function") {
+        toastEl.hidePopover();
+        setTimeout(() => toastEl.remove(), 260);
+        return;
+      }
+    } catch {}
+    toastEl.remove();
+  });
+}
+
+// ==================== SCRIPT API (ДЛЯ STORY.JS И SANDBOX.JS) ====================
+function clamp(val, min, max) {
+  return Math.min(max, Math.max(min, val));
+}
+
+function setPhoneUnread(flag) {
+  state.phoneUnread = Boolean(flag);
+  dom.phoneUnreadDot.hidden = !state.phoneUnread;
+}
+
+const scriptApi = {
+  addItem(itemId) {
+    if (!itemId || !ITEMS_CATALOG[itemId]) return;
+    if (!state.items.includes(itemId)) {
+      state.items.push(itemId);
+      setPhoneUnread(true);
+    }
+  },
+
+  addClue(clueId, opts = {}) {
+    if (!clueId || !CLUES_CATALOG[clueId]) return;
+    if (!state.clues.includes(clueId)) {
+      state.clues.push(clueId);
+      setPhoneUnread(true);
+      if (!opts.silent) {
+        sound.play("notify");
+        enqueueToast(`Зацепка: ${CLUES_CATALOG[clueId].title}`);
+      }
+    }
+  },
+
+  markPropTaken(propKey) {
+    if (!propKey) return;
+    state.roomProps[propKey] = { taken: true };
+    const marker = dom.roomPropsLayer.querySelector(`[data-prop-key="${propKey}"]`);
+    if (marker) {
+      marker.classList.add("is-taken");
+    }
+  },
+
+  changeStats(deltas = {}, toastMessages = [], opts = {}) {
+    if (typeof deltas.alpha === "number") {
+      state.player.alpha = Math.max(0, state.player.alpha + deltas.alpha);
+    }
+    if (typeof deltas.vanilla === "number") {
+      state.player.vanilla = Math.max(0, state.player.vanilla + deltas.vanilla);
+    }
+    state.player.vector = clamp(state.player.alpha - state.player.vanilla, -10, 10);
+
+    if (typeof deltas.loyalty === "number") {
+      state.masha.loyalty = clamp(state.masha.loyalty + deltas.loyalty, -5, 12);
+    }
+    if (typeof deltas.risk === "number") {
+      state.risk = clamp(state.risk + deltas.risk, 0, 15);
+    }
+    if (typeof deltas.katya === "number") {
+      state.relations.katya = clamp(state.relations.katya + deltas.katya, 0, 10);
+    }
+
+    setPhoneUnread(true);
+
+    // 15-секундный онбординг при первом изменении статов в Intro_1
+    if (!state.tutorialsSeen.scales || (opts.triggerOnboarding && !state.tutorialsSeen.scales)) {
+      state.tutorialsSeen.scales = true;
+      openModalDialog(dom.scalesTutorialDialog);
+    }
+
+    toastMessages.forEach((msg) => enqueueToast(msg));
+  },
+
+  toast(message, tone = "gold") {
+    enqueueToast(message, tone);
+  },
+
+  fx(sfxName) {
+    if (sfxName) sound.play(sfxName);
+  },
+
+  pushMcMessage(contactId, messageObj) {
+    if (!state.mcChats[contactId]) return;
+    state.mcChats[contactId].messages.push(messageObj);
+    setPhoneUnread(true);
+  }
+};
+
+// ==================== ЗВУК И КНОПКИ АУДИО (DEFAULT MUTED: TRUE) ====================
+function syncSoundUi() {
+  const isUnmuted = !sound.muted;
+  const pressedVal = isUnmuted ? "true" : "false";
+  const label = isUnmuted ? "Выключить звук" : "Включить звук";
+
+  [dom.titleSoundBtn, dom.btnSound].forEach((btn) => {
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", pressedVal);
+    btn.setAttribute("aria-label", label);
+  });
+
+  if (dom.btnMenuSoundToggle) {
+    dom.btnMenuSoundToggle.textContent = isUnmuted ? "Включён" : "Выключен";
+  }
+}
+
+function toggleGlobalSound() {
+  const nowMuted = sound.toggleMute();
+  prefs.muted = nowMuted;
+  savePrefs();
+  syncSoundUi();
+
+  if (!nowMuted) {
+    sound.play("tap");
+    if (dom.gameScreen.classList.contains("active") && state.lastAmbience) {
+      sound.setAmbience(state.lastAmbience);
+    }
+  }
+  haptic("light");
+}
+
+// ==================== УПРАВЛЕНИЕ АНИМАЦИЕЙ СЦЕН И РЕЖИМОМ «ЧИСТЫЙ КАДР» ====================
+function isMotionDisabled() {
+  return Boolean(
+    prefs.motionPaused || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+  );
+}
+
+function syncMotionUi() {
+  const paused = Boolean(prefs.motionPaused);
+  dom.appRoot.classList.toggle("motion-paused", paused);
+
+  if (dom.btnMotion) {
+    // По спецификации доступности: меняем aria-label между Pause/Play без aria-pressed
+    dom.btnMotion.dataset.motionPaused = paused ? "true" : "false";
+    dom.btnMotion.setAttribute(
+      "aria-label",
+      paused ? "Возобновить анимацию кадра" : "Приостановить анимацию кадра"
+    );
+  }
+
+  if (dom.btnMenuMotionToggle) {
+    dom.btnMenuMotionToggle.textContent = paused ? "На паузе" : "Активна";
+  }
+
+  fxEngine?.setPaused(paused);
+  syncStageVideoPlayback();
+}
+
+function toggleMotionPaused() {
+  prefs.motionPaused = !prefs.motionPaused;
+  savePrefs();
+  sound.play("tap");
+  haptic("light");
+  syncMotionUi();
+}
+
+function setCleanFrame(active) {
+  dom.appRoot.classList.toggle("clean-frame", active);
+  dom.btnCleanFrame.setAttribute("aria-pressed", active ? "true" : "false");
+  dom.cleanFrameHint.hidden = !active;
+}
+
+// ==================== ВИЗУАЛЬНАЯ СЦЕНА (ФОН, ВИДЕО KLING 2.5, КАМЕРА, СПРАЙТ) ====================
+let currentDisplayedBgUrl = "";
+let currentDisplayedVideoUrl = "";
+
+function stopStageVideoDom() {
+  if (!dom.stageVideo) return;
+  try {
+    dom.stageVideo.pause();
+  } catch {}
+  dom.stageVideo.classList.remove("is-ready");
+  dom.stageVideo.hidden = true;
+  dom.stageVideo.removeAttribute("src");
+  currentDisplayedVideoUrl = "";
+}
+
+function syncStageVideoPlayback() {
+  if (!dom.stageVideo) return;
+  const activeVideo = state.lastVideo;
+  if (!activeVideo || !dom.gameScreen.classList.contains("active") || state.mode !== "story") {
+    stopStageVideoDom();
+    return;
+  }
+
+  if (isMotionDisabled()) {
+    try {
+      dom.stageVideo.pause();
+    } catch {}
+    dom.stageVideo.classList.remove("is-ready");
+    dom.stageVideo.hidden = true;
+    return;
+  }
+
+  if (currentDisplayedVideoUrl !== activeVideo) {
+    dom.stageVideo.classList.remove("is-ready");
+    dom.stageVideo.src = activeVideo;
+    currentDisplayedVideoUrl = activeVideo;
+  }
+
+  dom.stageVideo.hidden = false;
+  const markReady = () => {
+    if (!isMotionDisabled() && currentDisplayedVideoUrl === activeVideo) {
+      dom.stageVideo.classList.add("is-ready");
+    }
+  };
+  if (dom.stageVideo.readyState >= 2) {
+    markReady();
+  } else {
+    dom.stageVideo.addEventListener("loadeddata", markReady, { once: true });
+  }
+  dom.stageVideo.play?.().catch(() => {});
+}
+
+function applyStageVideo(videoPath) {
+  state.lastVideo = videoPath || null;
+  syncStageVideoPlayback();
+}
+
+async function applyStageBackground(bgPath, camMode = "none") {
+  if (!bgPath) return;
+  state.lastBg = bgPath;
+  state.lastCam = camMode || "none";
+
+  const resolved = await resolveAssetUrl(bgPath);
+  if (!resolved) {
+    dom.stagePlaceholder.hidden = false;
+    dom.stagePlaceholderLabel.textContent = state.location || "Москва";
+    return;
+  }
+
+  dom.stagePlaceholder.hidden = true;
+
+  const camClasses = ["cam-zoom-slow", "cam-pan-up-reveal", "cam-sepia", "cam-dim"];
+  const nextCamClass =
+    camMode === "zoom-slow"
+      ? "cam-zoom-slow"
+      : camMode === "pan-up-reveal"
+        ? "cam-pan-up-reveal"
+        : camMode === "sepia"
+          ? "cam-sepia"
+          : camMode === "dim"
+            ? "cam-dim"
+            : "";
+
+  if (currentDisplayedBgUrl && currentDisplayedBgUrl !== resolved) {
+    dom.stageBgBack.src = currentDisplayedBgUrl;
+    dom.stageBg.classList.add("is-fading-in");
+    dom.stageBg.src = resolved;
+
+    requestAnimationFrame(() => {
+      dom.stageBg.classList.remove(...camClasses);
+      if (nextCamClass) dom.stageBg.classList.add(nextCamClass);
+      requestAnimationFrame(() => {
+        dom.stageBg.classList.remove("is-fading-in");
+      });
+    });
+  } else {
+    dom.stageBg.src = resolved;
+    dom.stageBgBack.src = resolved;
+    dom.stageBg.classList.remove(...camClasses);
+    if (nextCamClass) dom.stageBg.classList.add(nextCamClass);
+  }
+
+  currentDisplayedBgUrl = resolved;
+}
+
+async function applyStageSprite(spritePath) {
+  state.lastSprite = spritePath;
+  if (!spritePath) {
+    dom.stageSprite.hidden = true;
+    dom.stageSprite.removeAttribute("src");
+    return;
+  }
+  const resolved = await resolveAssetUrl(spritePath);
+  if (!resolved) {
+    dom.stageSprite.hidden = true;
+    return;
+  }
+  dom.stageSprite.src = resolved;
+  dom.stageSprite.hidden = false;
+}
+
+async function applyPropOverlay(propPath) {
+  if (!propPath) {
+    dom.propCardOverlay.hidden = true;
+    return;
+  }
+  const resolved = await resolveAssetUrl(propPath);
+  if (!resolved) {
+    dom.propCardOverlay.hidden = true;
+    return;
+  }
+  dom.propCardImg.src = resolved;
+  dom.propCardOverlay.hidden = false;
+}
+
+function applyIncomingCard(cardData) {
+  if (!cardData) {
+    dom.incomingMsgOverlay.hidden = true;
+    return;
+  }
+  dom.incomingMsgSender.textContent = formatText(cardData.sender || "");
+  dom.incomingMsgMeta.textContent = formatText(cardData.meta || "");
+  dom.incomingMsgBody.textContent = formatText(cardData.text || "");
+  dom.incomingMsgOverlay.hidden = false;
+}
+
+function applyPortraitAvatar(role, mood) {
+  // По GDD портрет Маши и рассказчика не дублируется в диалоговом окне
+  if (!mood || role === "narrator" || role === "masha" || role === "komendant") {
+    dom.speakerAvatarWrap.hidden = true;
+    return;
+  }
+
+  dom.speakerAvatarWrap.hidden = false;
+  const spriteEl = dom.speakerAvatarSprite;
+  const monoEl = dom.speakerAvatarFallback;
+
+  if (hasV2AvatarSheet) {
+    monoEl.hidden = true;
+    spriteEl.hidden = false;
+    spriteEl.style.backgroundImage = `url("${v2AvatarSheetUrl}")`;
+    spriteEl.style.backgroundSize = "200% 200%";
+    const posMap = {
+      calm: "0% 0%",
+      shy: "100% 0%",
+      katya: "0% 100%",
+      lenka: "100% 100%"
+    };
+    spriteEl.style.backgroundPosition = posMap[mood] || "0% 0%";
+    return;
+  }
+
+  // Fallback до завершения рендера ava_characters_v2
+  if (mood === "calm" || mood === "shy") {
+    monoEl.hidden = true;
+    spriteEl.hidden = false;
+    spriteEl.style.backgroundImage = 'url("./assets/ava_mc_sheet.webp")';
+    spriteEl.style.backgroundSize = "200% 200%";
+    spriteEl.style.backgroundPosition = mood === "shy" ? "0% 100%" : "0% 0%";
+  } else if (mood === "lenka") {
+    monoEl.hidden = true;
+    spriteEl.hidden = false;
+    spriteEl.style.backgroundImage = 'url("./assets/ava_lenka_phone.webp")';
+    spriteEl.style.backgroundSize = "cover";
+    spriteEl.style.backgroundPosition = "center 18%";
+  } else {
+    // Для Кати без v2-листа выводим изящную монограмму, чтобы не показывать лицо ГГ
+    spriteEl.hidden = true;
+    monoEl.hidden = false;
+    monoEl.textContent = "К";
+  }
+}
+
+// ==================== ПЕЧАТЬ ТЕКСТА И БЭКЛОГ ====================
+function stopTyping(completeImmediately = false) {
+  if (typingTimer) {
+    clearInterval(typingTimer);
+    typingTimer = null;
+  }
+  if (completeImmediately && isTyping) {
+    dom.dialogueText.textContent = fullTargetText;
+  }
+  isTyping = false;
+}
+
+function renderDialogueLine(step) {
+  const role = step.role || "narrator";
+  const speakerText = step.speaker ? formatText(step.speaker) : "";
+  const bodyText = formatText(step.text || "");
+
+  lastSpokenContext = speakerText ? `${speakerText}: «${bodyText}»` : bodyText;
+
+  dom.dialogueBox.dataset.role = role;
+  dom.speakerName.textContent = speakerText;
+  dom.speakerRoleTag.hidden = role !== "mct";
+  dom.speakerRow.hidden = !speakerText && role === "narrator";
+
+  applyPortraitAvatar(role, step.portraitMood);
+
+  // Сохраняем реплику в историю (без дублирования подряд при перезагрузке)
+  const lastEntry = state.backlog[state.backlog.length - 1];
+  if (bodyText && (!lastEntry || lastEntry.text !== bodyText)) {
+    state.backlog.push({
+      speaker: speakerText || (role === "mct" ? `${formatText("{mc}")} (мысли)` : "Повествование"),
+      text: bodyText
+    });
+    if (state.backlog.length > 45) state.backlog.shift();
+  }
+
+  dom.choiceWrap.hidden = true;
+  dom.dialogueBox.hidden = false;
+  dom.vnBottomPanel.hidden = false;
+
+  stopTyping(false);
+  fullTargetText = bodyText;
+
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  if (prefs.textSpeed === "instant" || reduceMotion || bodyText.length === 0) {
+    dom.dialogueText.textContent = bodyText;
+    isTyping = false;
+    return;
+  }
+
+  isTyping = true;
+  dom.dialogueText.textContent = "";
+  let cursor = 0;
+  const stepChars = bodyText.length > 180 ? 3 : 2;
+
+  typingTimer = setInterval(() => {
+    cursor += stepChars;
+    if (cursor >= bodyText.length) {
+      dom.dialogueText.textContent = bodyText;
+      stopTyping(false);
+    } else {
+      dom.dialogueText.textContent = bodyText.slice(0, cursor);
+    }
   }, 16);
 }
 
-function finishTypewriterImmediately() {
-  if (!isTyping) return false;
-  clearInterval(typingTimer);
-  el.dialogueText.textContent = fullCurrentText;
-  isTyping = false;
-  return true;
-}
+// ==================== ВЫВОД КНОПОК ВЫБОРА (СТРОГО БЕЗ СПОЙЛЕРОВ СТАТОВ) ====================
+function renderChoicePanel(choices) {
+  activeChoices = choices;
+  stopTyping(true);
 
-function getCurrentStepList() {
-  if (activeSequence) return activeSequence;
-  return scriptBlocks[state.blockId] || [];
-}
-
-function getCurrentIndex() {
-  return activeSequence ? activeSeqIndex : state.stepIndex;
-}
-
-function renderStep() {
-  const list = getCurrentStepList();
-  const idx = getCurrentIndex();
-  const step = list[idx];
-
-  if (!step) {
-    if (activeSequence) {
-      const done = onSequenceDone;
-      activeSequence = null;
-      activeSeqIndex = 0;
-      onSequenceDone = null;
-      if (done) done();
-      return;
-    }
-    return;
-  }
-
-  // Мгновенные управляющие шаги
-  if (step.goto) {
-    jumpToBlock(step.goto);
-    return;
-  }
-  if (step.enterSandbox) {
-    enterApartmentSandbox();
-    return;
-  }
-  if (step.finishPrologue) {
-    showEndingScreen();
-    return;
-  }
-
-  // Побочный эффект шага
-  if (typeof step.effect === "function") {
-    step.effect(state, scriptApi);
-  }
-
-  // Звук и атмосфера
-  if (step.ambience) sound.setAmbience(step.ambience);
-  if (step.fx) sound.fx(step.fx);
-
-  if (step.shake) {
-    el.stageViewport.classList.remove("fx-shake");
-    void el.stageViewport.offsetWidth;
-    el.stageViewport.classList.add("fx-shake");
-    haptic("medium");
-  }
-
-  // Фон и камера
-  if (step.bg) setStageImage(step.bg, state.blockId);
-  if (step.cam) {
-    el.stageBg.dataset.cam = step.cam;
-  } else if (step.bg) {
-    delete el.stageBg.dataset.cam;
-  }
-
-  // Спрайт Маши
-  if (step.sprite) {
-    el.spriteLayer.hidden = false;
-    if (el.stageSprite.getAttribute("src") !== step.sprite) {
-      el.stageSprite.src = step.sprite;
-    }
-  } else if (step.bg && !activeSequence) {
-    el.spriteLayer.hidden = true;
-  }
-
-  // Оверлей крупной улики
-  if (step.prop) {
-    el.propCardOverlay.hidden = false;
-    el.propCardImg.src = step.prop;
+  dom.choicePanel.innerHTML = "";
+  if (lastSpokenContext) {
+    dom.choiceContextQuote.textContent = lastSpokenContext;
+    dom.choiceContextQuote.hidden = false;
   } else {
-    el.propCardOverlay.hidden = true;
+    dom.choiceContextQuote.hidden = true;
   }
 
-  // Выборы (обычные или динамические)
-  const choices = typeof step.dynamicChoices === "function" ? step.dynamicChoices(state) : step.choices;
-  if (choices && choices.length > 0) {
-    renderChoices(choices);
-    return;
-  }
-
-  // Обычная реплика / мысль
-  el.vnBottomPanel.hidden = false;
-  el.choicePanel.hidden = true;
-  el.dialogueBox.hidden = false;
-
-  const speaker = formatText(step.speaker || "");
-  const text = formatText(step.text || "");
-  const isThought = !!step.thought;
-  const isMasha = step.style === "masha";
-
-  el.dialogueBox.dataset.style = isThought ? "thought" : isMasha ? "masha" : "mc";
-  el.speakerName.textContent = speaker;
-  el.speakerTag.hidden = !isThought;
-
-  // Всплывающий портрет эмоций ГГ (как в Amnesia / HornyEmpire)
-  if (!isMasha && speaker === state.playerName) {
-    el.mcAvatarWrap.hidden = false;
-    el.mcAvatarSprite.dataset.mood = step.mood || "neutral";
-  } else {
-    el.mcAvatarWrap.hidden = true;
-  }
-
-  // Лог истории
-  const lastLog = state.log[state.log.length - 1];
-  if (!lastLog || lastLog.text !== text) {
-    state.log.push({ speaker, text, thought: isThought });
-    if (state.log.length > 60) state.log.shift();
-  }
-
-  startTypewriter(text);
-  preloadUpcomingAssets(list, idx);
-  saveState();
-}
-
-function renderChoices(choices) {
-  el.vnBottomPanel.hidden = false;
-  el.choicePanel.innerHTML = "";
-  el.choicePanel.hidden = false;
-  el.tapHint.hidden = true;
-
-  for (const ch of choices) {
+  choices.forEach((choice) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "choice-btn";
+    btn.textContent = formatText(choice.text);
+    btn.addEventListener("click", () => handleChoicePick(choice));
+    dom.choicePanel.appendChild(btn);
+  });
 
-    const spanText = document.createElement("span");
-    spanText.textContent = formatText(ch.text);
-    btn.appendChild(spanText);
+  dom.dialogueBox.hidden = true;
+  dom.choiceWrap.hidden = false;
+  dom.vnBottomPanel.hidden = false;
+}
 
-    if (ch.badge) {
-      const badge = document.createElement("span");
-      badge.className = "choice-badge";
-      badge.textContent = ch.badge;
-      btn.appendChild(badge);
-    }
+function handleChoicePick(choice) {
+  if (!choice) return;
+  activeChoices = null;
+  dom.choiceWrap.hidden = true;
 
-    btn.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      sound.fx("tap");
-      haptic("light");
-      el.tapHint.hidden = false;
-      el.choicePanel.hidden = true;
+  sound.play("choice");
+  haptic("light");
 
-      if (typeof ch.onPick === "function") {
-        ch.onPick(state, scriptApi);
-      }
-      if (ch.next && Array.isArray(ch.next)) {
-        activeSequence = ch.next;
-        activeSeqIndex = 0;
-        renderStep();
-        return;
-      }
-      if (ch.goto) {
-        jumpToBlock(ch.goto);
-        return;
-      }
-      advanceStep();
-    });
-
-    el.choicePanel.appendChild(btn);
+  if (typeof choice.onPick === "function") {
+    choice.onPick(state, scriptApi);
   }
-}
 
-function jumpToBlock(blockId) {
-  state.blockId = blockId;
-  state.stepIndex = 0;
-  renderStep();
-}
+  if (Array.isArray(choice.next) && choice.next.length > 0) {
+    ephemeralQueue.unshift(...choice.next);
+    advanceEphemeralStep();
+    saveGame();
+    return;
+  }
 
-function advanceStep() {
-  if (finishTypewriterImmediately()) return;
-  if (!el.choicePanel.hidden) return;
+  if (choice.goto) {
+    jumpToStoryBlock(choice.goto);
+    return;
+  }
 
-  sound.fx("tap");
-  if (activeSequence) {
-    activeSeqIndex += 1;
-    renderStep();
+  if (ephemeralQueue.length > 0) {
+    advanceEphemeralStep();
   } else {
     state.stepIndex += 1;
-    renderStep();
+    runCurrentStoryStep();
   }
 }
 
-function preloadUpcomingAssets(list, startIdx) {
-  for (let i = startIdx + 1; i <= Math.min(list.length - 1, startIdx + 3); i++) {
-    const s = list[i];
-    if (s?.bg) {
-      const img = new Image();
-      img.src = s.bg;
-    }
-    if (s?.sprite) {
-      const sp = new Image();
-      sp.src = s.sprite;
-    }
+// ==================== ИСПОЛНЕНИЕ ШАГОВ СЦЕНАРИЯ ====================
+function applyStepPresentation(step) {
+  if (step.location) {
+    state.location = step.location;
+    dom.hudLocationBadge.textContent = step.location;
+  }
+
+  if (step.bg) {
+    applyStageBackground(step.bg, step.cam || "none");
+  }
+
+  if (Object.prototype.hasOwnProperty.call(step, "video")) {
+    applyStageVideo(step.video);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(step, "sprite")) {
+    applyStageSprite(step.sprite);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(step, "prop")) {
+    applyPropOverlay(step.prop);
+  } else {
+    applyPropOverlay(null);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(step, "incomingCard")) {
+    applyIncomingCard(step.incomingCard);
+  }
+
+  if (step.fxShader) {
+    state.lastFxShader = step.fxShader;
+    fxEngine?.setMode(step.fxShader);
+  }
+
+  if (step.ambience) {
+    state.lastAmbience = step.ambience;
+    sound.setAmbience(step.ambience);
+  }
+
+  if (step.fx) {
+    sound.play(step.fx);
+  }
+
+  if (step.joltGlass) {
+    fxEngine?.triggerJolt();
+  }
+
+  if (step.shake) {
+    dom.stageViewport.classList.remove("fx-shake");
+    void dom.stageViewport.offsetWidth;
+    dom.stageViewport.classList.add("fx-shake");
+    haptic("medium");
+  }
+
+  if (typeof step.effect === "function") {
+    step.effect(state, scriptApi);
   }
 }
 
-// ==================== РЕЖИМ ПЕСОЧНИЦЫ (КВАРТИРА МАШИ) ====================
-function enterApartmentSandbox(roomId = state.currentRoom || "living") {
+function jumpToStoryBlock(blockId) {
+  if (!SCRIPT[blockId]) return;
+  state.mode = "story";
+  state.blockId = blockId;
+  state.stepIndex = 0;
+  runCurrentStoryStep();
+}
+
+function runCurrentStoryStep() {
+  const block = SCRIPT[state.blockId];
+  if (!block || state.stepIndex >= block.length) {
+    return;
+  }
+
+  const step = block[state.stepIndex];
+
+  if (step.goto) {
+    jumpToStoryBlock(step.goto);
+    return;
+  }
+
+  if (typeof step.branchByState === "function") {
+    const targetBlock = step.branchByState(state);
+    jumpToStoryBlock(targetBlock);
+    return;
+  }
+
+  if (step.enterSandbox) {
+    enterPenthouseSandbox("living");
+    return;
+  }
+
+  if (step.finishPrologue) {
+    completePrologueFinale();
+    return;
+  }
+
+  dom.roomNav.hidden = true;
+  dom.hotspotLayer.hidden = true;
+  dom.sandboxBanner.hidden = true;
+  dom.roomPropsLayer.hidden = true;
+  dom.epilogueBar.hidden = true;
+  dom.gameScreen.classList.remove("is-inspecting-spot");
+
+  applyStepPresentation(step);
+
+  if (step.choices || typeof step.dynamicChoices === "function") {
+    const resolvedChoices =
+      typeof step.dynamicChoices === "function" ? step.dynamicChoices(state) : step.choices;
+    renderChoicePanel(resolvedChoices || []);
+    saveGame();
+    return;
+  }
+
+  renderDialogueLine(step);
+  saveGame();
+}
+
+function startEphemeralSequence(steps) {
+  if (!Array.isArray(steps) || steps.length === 0) return;
+  ephemeralQueue = [...steps];
+  dom.gameScreen.classList.add("is-inspecting-spot");
+  advanceEphemeralStep();
+}
+
+function advanceEphemeralStep() {
+  if (ephemeralQueue.length === 0) {
+    applyPropOverlay(null);
+    dom.gameScreen.classList.remove("is-inspecting-spot");
+    if (state.mode === "sandbox") {
+      dom.vnBottomPanel.hidden = true;
+      renderSandboxRoom(state.sandbox.currentRoom);
+    }
+    saveGame();
+    return;
+  }
+
+  const step = ephemeralQueue.shift();
+  applyStepPresentation(step);
+
+  if (step.choices) {
+    renderChoicePanel(step.choices);
+    return;
+  }
+
+  renderDialogueLine(step);
+}
+
+function handleAdvanceAction() {
+  if (dom.appRoot.classList.contains("clean-frame")) {
+    setCleanFrame(false);
+    return;
+  }
+
+  if (activeChoices) return;
+
+  if (isTyping) {
+    stopTyping(true);
+    return;
+  }
+
+  if (state.mode === "epilogue") return;
+
+  if (ephemeralQueue.length > 0 || dom.gameScreen.classList.contains("is-inspecting-spot")) {
+    sound.play("tap");
+    advanceEphemeralStep();
+    return;
+  }
+
+  if (state.mode === "story") {
+    sound.play("tap");
+    state.stepIndex += 1;
+    runCurrentStoryStep();
+  }
+}
+
+// ==================== ПЕСОЧНИЦА INTRO_4 (4 КОМНАТЫ + ИСЧЕЗАЮЩИЕ ПРЕДМЕТЫ) ====================
+function enterPenthouseSandbox(roomId = "living") {
   state.mode = "sandbox";
-  activeSequence = null;
-  onSequenceDone = null;
+  state.sandbox.currentRoom = SANDBOX_ROOMS[roomId] ? roomId : "living";
+  ephemeralQueue = [];
+  activeChoices = null;
 
-  el.app.dataset.mode = "sandbox";
-  el.spriteLayer.hidden = true;
-  el.propCardOverlay.hidden = true;
-  el.vnBottomPanel.hidden = true;
-  el.sandboxBanner.hidden = false;
-  el.roomNav.hidden = false;
+  applyStageVideo(null);
+  applyStageSprite(null);
+  applyPropOverlay(null);
+  applyIncomingCard(null);
+
+  dom.epilogueBar.hidden = true;
+  dom.vnBottomPanel.hidden = true;
+  dom.roomNav.hidden = false;
+  dom.hotspotLayer.hidden = false;
+  dom.sandboxBanner.hidden = false;
+  dom.roomPropsLayer.hidden = false;
+  dom.gameScreen.classList.remove("is-inspecting-spot");
 
   sound.setAmbience("penthouse");
-  renderSandboxRoom(roomId);
-  saveState();
+  state.lastAmbience = "penthouse";
+
+  renderSandboxRoom(state.sandbox.currentRoom);
+  saveGame();
+}
+
+function isRoomFullyExplored(roomId) {
+  const rp = state.roomProps || {};
+  if (roomId === "living") return Boolean(rp.living_table_clue?.taken);
+  if (roomId === "kitchen") return Boolean(rp.kitchen_calla_clue?.taken);
+  if (roomId === "bathroom") return Boolean(rp.bathroom_lace_dilemma?.taken);
+  if (roomId === "bedroom") {
+    return Boolean(rp.bedroom_swing_photo?.taken && state.flags.masha_phone_unlocked);
+  }
+  return false;
+}
+
+function getHotspotSvg(iconName) {
+  switch (iconName) {
+    case "moon":
+      return '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" />';
+    case "sparkle":
+      return '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />';
+    case "eye":
+      return '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.6" />';
+    case "phone":
+      return '<rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M10 5.5h4" />';
+    default:
+      return '<circle cx="11" cy="11" r="6.8" /><path d="M20 20l-4.2-4.2" />';
+  }
 }
 
 function renderSandboxRoom(roomId) {
   const room = SANDBOX_ROOMS[roomId] || SANDBOX_ROOMS.living;
-  state.currentRoom = room.id;
-  el.sandboxRoomTitle.textContent = room.title;
-  delete el.stageBg.dataset.cam;
-  setStageImage(room.bg, room.id);
+  state.sandbox.currentRoom = room.id;
+  state.location = room.locationBadge;
+  dom.hudLocationBadge.textContent = room.locationBadge;
 
-  for (const tab of el.roomNav.querySelectorAll(".room-tab")) {
-    tab.classList.toggle("is-active", tab.dataset.room === room.id);
-  }
+  applyStageBackground(room.bg, "zoom-slow");
+  state.lastFxShader = room.fxShader || "none";
+  fxEngine?.setMode(state.lastFxShader);
 
-  el.hotspotLayer.innerHTML = "";
-  for (const spot of room.hotspots) {
-    const pin = document.createElement("button");
-    pin.type = "button";
-    pin.className = "hotspot-pin";
-    if (state.visitedSpots.includes(spot.id)) pin.classList.add("is-visited");
-    pin.dataset.kind = spot.kind || "normal";
-    pin.style.left = `${spot.x}%`;
-    pin.style.top = `${spot.y}%`;
-    pin.textContent = spot.label;
+  const goalsDone = countExploredSandboxGoals(state);
+  dom.sandboxRoomTitle.textContent = room.title;
+  dom.sandboxGoalCounter.textContent = `${goalsDone} / 4`;
 
-    pin.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      sound.fx("tap");
+  // Слой 2: визуально исчезающие предметы комнаты (прозрачные вырезки cutout_*.webp + бейдж)
+  dom.roomPropsLayer.innerHTML = "";
+  (room.visualProps || []).forEach((vp) => {
+    const taken = Boolean(state.roomProps?.[vp.propKey]?.taken);
+    const marker = document.createElement("div");
+    marker.className = `room-prop-marker${taken ? " is-taken" : ""}`;
+    marker.dataset.propKey = vp.propKey;
+    marker.style.left = `${vp.x}%`;
+    marker.style.top = `${vp.y}%`;
+    const cutoutHtml = vp.imgSrc
+      ? `<img class="room-prop-cutout" src="${vp.imgSrc}" alt="" width="180" height="180" loading="lazy" decoding="async" />`
+      : "";
+    marker.innerHTML = `${cutoutHtml}<span class="room-prop-pill"><span class="room-prop-glint"></span><span>${vp.caption}</span></span>`;
+    dom.roomPropsLayer.appendChild(marker);
+  });
+
+  // Хотспоты комнаты
+  dom.hotspotLayer.innerHTML = "";
+  (room.hotspots || []).forEach((spot) => {
+    const inspected = spot.propKey ? Boolean(state.roomProps?.[spot.propKey]?.taken) : false;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `hotspot-pin${inspected ? " is-inspected" : ""}${spot.isExit ? " is-exit" : ""}`;
+    btn.style.left = `${spot.x}%`;
+    btn.style.top = `${spot.y}%`;
+    btn.innerHTML = `
+      <span class="hotspot-pin-ring" aria-hidden="true">
+        <svg class="icon-svg-sm" viewBox="0 0 24 24">${getHotspotSvg(spot.icon)}</svg>
+      </span>
+      <span class="hotspot-pin-label">${spot.label}</span>
+    `;
+    btn.addEventListener("click", () => handleHotspotClick(spot.id));
+    dom.hotspotLayer.appendChild(btn);
+  });
+
+  // Вкладки 4 комнат снизу
+  dom.roomTabs.innerHTML = "";
+  Object.values(SANDBOX_ROOMS).forEach((r) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `room-tab-btn${r.id === room.id ? " active" : ""}`;
+    const hasUnseen = !isRoomFullyExplored(r.id);
+    tab.innerHTML = `${r.shortLabel}${hasUnseen ? '<span class="room-tab-dot" aria-hidden="true"></span>' : ""}`;
+    tab.addEventListener("click", () => {
+      if (r.id === state.sandbox.currentRoom) return;
+      sound.play("tap");
       haptic("light");
-      triggerHotspot(spot.id);
+      renderSandboxRoom(r.id);
+      saveGame();
     });
-
-    el.hotspotLayer.appendChild(pin);
-  }
-  saveState();
+    dom.roomTabs.appendChild(tab);
+  });
 }
 
-function triggerHotspot(spotId) {
-  if (!state.visitedSpots.includes(spotId) && spotId !== "guest_sofa") {
-    state.visitedSpots.push(spotId);
-  }
+function handleHotspotClick(spotId) {
+  sound.play("tap");
+  haptic("light");
 
-  const seq = getHotspotSequence(spotId, state);
-  if (seq === "OPEN_PHONE_MODAL") {
-    openMashaPhoneModal();
-    renderSandboxRoom(state.currentRoom);
+  const result = getHotspotSequence(spotId, state);
+  if (result === "OPEN_MASHA_PHONE") {
+    openMashaWorkPhone();
     return;
   }
-  if (seq === "CONFIRM_SLEEP") {
+  if (result === "CONFIRM_SLEEP") {
     openSleepConfirmation();
     return;
   }
-  if (Array.isArray(seq) && seq.length > 0) {
-    el.hotspotLayer.innerHTML = "";
-    el.sandboxBanner.hidden = true;
-    activeSequence = seq;
-    activeSeqIndex = 0;
-    onSequenceDone = () => {
-      el.propCardOverlay.hidden = true;
-      el.vnBottomPanel.hidden = true;
-      el.sandboxBanner.hidden = false;
-      renderSandboxRoom(state.currentRoom);
-    };
-    renderStep();
+  if (Array.isArray(result) && result.length > 0) {
+    startEphemeralSequence(result);
   }
 }
 
 function openSleepConfirmation() {
-  const unexplored = 4 - state.clues.length;
-  el.sleepDesc.textContent =
-    unexplored > 0
-      ? `Ты нашёл ${state.clues.length} из 4 главных улик в квартире Маши. Хочешь ещё пошариться по комнатам или выключить свет и ждать её возвращения?`
-      : "Ты изучил все секреты пентхауса! Пора выключать свет на диване и узнать, какой вернётся Маша после полуночи.";
-  el.confirmSleepDialog.returnValue = "";
-  el.confirmSleepDialog.showModal();
-}
-
-// ==================== МОДАЛКА РАБОЧЕГО IPHONE МАШИ ====================
-let currentPinInput = "";
-let activePhoneTab = "vip";
-
-function openMashaPhoneModal() {
-  currentPinInput = "";
-  renderPhoneBody();
-  el.phoneDialog.showModal();
-}
-
-function renderPhoneBody() {
-  if (!state.flags.phoneUnlocked) {
-    const dotsHtml = [0, 1, 2, 3]
-      .map((i) => `<span class="pin-dot ${i < currentPinInput.length ? "filled" : ""}"></span>`)
-      .join("");
-
-    const hintText = state.flags.sawPhotoDate
-      ? "💡 Подсказка с детской рамки у кровати: дата на озере <strong>14.08</strong>"
-      : state.flags.pinTries >= 2
-      ? "💡 Подсказка: осмотри детскую фотографию в рамке на тумбочке в спальне!"
-      : "Обои экрана блокировки: вы с Машей в детстве летом на озере.";
-
-    el.phoneBody.innerHTML = `
-      <div style="text-align:center; padding: 6px 4px 12px;">
-        <div style="font-size: 2rem; margin-bottom: 4px;">🔒</div>
-        <div style="font-weight:700; margin-bottom: 4px;">Введите код-пароль (4 цифры)</div>
-        <div style="font-size:0.78rem; color: var(--text-muted); line-height:1.35;">${hintText}</div>
-        <div class="pin-dots">${dotsHtml}</div>
-        <div id="pinErrorMsg" style="min-height:18px; font-size:0.76rem; color: var(--rose); margin-bottom:8px;"></div>
-        <div class="pin-grid">
-          ${[1, 2, 3, 4, 5, 6, 7, 8, 9, "C", 0, "⌫"]
-            .map((k) => `<button type="button" class="pin-key" data-key="${k}">${k}</button>`)
-            .join("")}
-        </div>
-      </div>
-    `;
-
-    for (const btn of el.phoneBody.querySelectorAll(".pin-key")) {
-      btn.addEventListener("click", () => handlePinKey(btn.dataset.key));
-    }
-    return;
-  }
-
-  // Разблокированный рабочий смартфон Маши!
-  let tabHtml = "";
-  if (activePhoneTab === "vip") {
-    tabHtml = `
-      <div class="dossier-card" style="border-color: rgba(255,77,126,0.4);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <strong style="color:#ff85a6;">🔞 Приватка «Мария Боратовна»</strong>
-          <span style="font-size:0.74rem; color:var(--gold);">18 420 подп.</span>
-        </div>
-        <p style="margin:0 0 8px; font-size:0.82rem; color:#dedce8;">
-          Баланс бота: <strong>482 500 ₽</strong> <em>(холд вывода: 21 день)</em>
-        </p>
-        <div class="chat-bubble chat-in">
-          📸 <strong>Пост #211:</strong> «Ребят, тот самый выпуск из исповедальни уже в закрытой ленте... Плоть слаба 🔥» — <em>4 920 ❤️</em>
-        </div>
-        <div class="chat-bubble chat-in">
-          📸 <strong>Черновик:</strong> «Примерка белого кружева перед закрытым вечером...»
-        </div>
-        <p style="margin:6px 0 0; font-size:0.78rem; color:var(--cyan); font-style:italic;">
-          Мысль ${state.playerName}: «Ни хрена себе "риэлтор по коммерческой недвижимости"... Да полгорода мужиков пускает слюни на мою сводную сестру!»
-        </p>
-      </div>
-    `;
-  } else if (activePhoneTab === "lenka") {
-    tabHtml = `
-      <div class="chat-header-row">
-        <img src="./assets/ava_lenka_phone.webp" alt="Ленка" class="chat-ava" width="42" height="42" fetchpriority="low">
-        <div>
-          <strong style="display:block; font-size:0.9rem;">Ленка 💋 (Лучшая подруга)</strong>
-          <span style="font-size:0.74rem; color:#6ee7b7;">в сети</span>
-        </div>
-      </div>
-      <div class="chat-bubble chat-out">
-        Ленка, у меня ЧП!! Ко мне реально переехал мой мелкий сводный братик из интерната! Такой скромный котик, краснеет от каждого слова, а у меня игрушка на кровати и вино со вчерашнего папика 😭
-      </div>
-      <div class="chat-bubble chat-in">
-        АХАХАХА стоп, настоящий восемнадцатилетний девственник прямо у тебя в пентхаусе?! Машка, ты в раю! 😈
-      </div>
-      <div class="chat-bubble chat-out">
-        Да ты больная!! Я ему сказала, что я РИЭЛТОР! Даже не вздумай его трогать!
-      </div>
-      <div class="chat-bubble chat-in">
-        Поздно, подруга 💅 Завтра с утра заскочу к вам «на кофе» в самом коротком платье — лично проверю, насколько твой братик стойкий!
-      </div>
-    `;
+  const done = countExploredSandboxGoals(state);
+  if (done < 4) {
+    dom.confirmSleepSummary.textContent = `Вы изучили ${done} из 4 ключевых зон пентхауса. Если лечь на диван сейчас, ночь продолжится и Маша скоро вернётся со встречи.`;
   } else {
-    tabHtml = `
-      <div class="dossier-card" style="border-color: var(--gold-soft);">
-        <strong style="color:var(--gold); display:block; margin-bottom:8px;">🎭 Шеф • Закрытый Клуб</strong>
-        <div class="chat-bubble chat-in">
-          Мария, машина будет у подъезда в 22:00. Сегодня закрытый вечер для старейшин Ордена. Чёрную карту с золотой маской не забудь.
-        </div>
-        <div class="chat-bubble chat-out">
-          Поняла, Шеф, уже выбегаю! В 01:30 отпустите домой? У меня сегодня гость ночует.
-        </div>
-        <div class="chat-bubble chat-in">
-          Отработаешь подачу без капризов — отпустим. И никаких кружочков на кухне.
-        </div>
-      </div>
-    `;
+    dom.confirmSleepSummary.textContent =
+      "Вы осмотрели все комнаты апартаментов и проверили рабочий смартфон Маши. Самое время погасить бра и дождаться её возвращения.";
   }
-
-  el.phoneBody.innerHTML = `
-    <div class="phone-tabs">
-      <button type="button" class="phone-tab-btn ${activePhoneTab === "vip" ? "is-active" : ""}" data-ptab="vip">🔞 Канал</button>
-      <button type="button" class="phone-tab-btn ${activePhoneTab === "lenka" ? "is-active" : ""}" data-ptab="lenka">💋 Ленка</button>
-      <button type="button" class="phone-tab-btn ${activePhoneTab === "chef" ? "is-active" : ""}" data-ptab="chef">🎭 Шеф</button>
-    </div>
-    ${tabHtml}
-  `;
-
-  for (const b of el.phoneBody.querySelectorAll(".phone-tab-btn")) {
-    b.addEventListener("click", () => {
-      sound.fx("tap");
-      activePhoneTab = b.dataset.ptab;
-      renderPhoneBody();
-    });
-  }
+  openModalDialog(dom.confirmSleepDialog);
 }
 
-function handlePinKey(key) {
-  if (key === "C") {
-    currentPinInput = "";
-    sound.fx("tap");
-    renderPhoneBody();
-    return;
+// ==================== СМАРТФОН АРТЁМА (ШКАЛЫ, ЧАТЫ, УЛИКИ, ОТКЛИКИ) ====================
+function getArchetypeSummary() {
+  const v = state.player.vector;
+  if (v >= 2) {
+    return {
+      title: "Уверенный Альфа",
+      desc: "Вы держите взгляд прямо и не боитесь брать мужскую инициативу в напряжённые секунды."
+    };
   }
-  if (key === "⌫") {
-    currentPinInput = currentPinInput.slice(0, -1);
-    sound.fx("tap");
-    renderPhoneBody();
-    return;
+  if (v <= -2) {
+    return {
+      title: "Тёплый Романтик",
+      desc: "Чуткость, бережная забота и внимание к деталям заставляют девушек открываться вам без защиты."
+    };
   }
-  if (currentPinInput.length >= 4) return;
-
-  sound.fx("key_beep");
-  currentPinInput += key;
-  renderPhoneBody();
-
-  if (currentPinInput.length === 4) {
-    if (currentPinInput === "1408") {
-      state.flags.phoneUnlocked = true;
-      state.stats.boldness += 1;
-      scriptApi.addClue("secret_channel", "Закрытый 18+ канал «Мария Боратовна» и чат с Шефом");
-      showToast("🔓 Телефон Маши взломан!", "spicy");
-      saveState();
-      renderPhoneBody();
-    } else {
-      state.flags.pinTries = (state.flags.pinTries || 0) + 1;
-      sound.fx("error");
-      haptic("error");
-      currentPinInput = "";
-      renderPhoneBody();
-      const errEl = document.getElementById("pinErrorMsg");
-      if (errEl) errEl.textContent = "Неверный PIN! (Попробуй дату с детского фото: 1408)";
-    }
+  if (v > 0) {
+    return {
+      title: "Склонность к Альфе",
+      desc: "Спокойная внутренняя твёрдость в сочетании со сдержанным тактом."
+    };
   }
-}
-
-// ==================== ДОСЬЕ / РЮКЗАК / ЛОГ / ФИНАЛ ====================
-function openDossierModal() {
-  const cluesHtml =
-    state.clues.length > 0
-      ? state.clues.map((c) => `<li>${c.label}</li>`).join("")
-      : "<li>Пока не найдено ни одной улики (осмотри квартиру Маши).</li>";
-
-  el.dossierContent.innerHTML = `
-    <div class="dossier-card">
-      <strong style="color:#ff85a6;">Маша (Мария Боратовна), 22 года</strong>
-      <p style="margin:4px 0 8px; font-size:0.82rem; color:var(--text-muted);">
-        Твоя сводная сестра (0% кровного родства). Ослепительная блондинка, уверяющая, что работает «риэлтором».
-      </p>
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; font-size:0.8rem;">
-        <div class="stat-tile"><span>♥ Близость</span><strong>${state.stats.affection}</strong></div>
-        <div class="stat-tile"><span>🔥 Разврат</span><strong>${state.stats.boldness}</strong></div>
-        <div class="stat-tile"><span>🛡 Доверие</span><strong>${state.stats.trust}</strong></div>
-      </div>
-    </div>
-
-    <div class="dossier-card">
-      <strong style="color:var(--gold);">Система развития по Звёздам (как в Amnesia)</strong>
-      <div class="star-roadmap">
-        <div class="star-step is-current">★0 • Пролог: Переезд в пентхаус, улики и тайны</div>
-        <div class="star-step">★1 • Глава 1: Визит хищницы Ленки и подглядывание в душе</div>
-        <div class="star-step">★2 • Глава 2: Партия в Дурака на желание и первые касания</div>
-        <div class="star-step">★3 • Глава 3: Ревность Маши и проникновение в Закрытый Клуб</div>
-        <div class="star-step">★4–5 • Финал: Выбор ветки (Любовь / Доминация / Гарем с Ленкой)</div>
-      </div>
-    </div>
-
-    <div class="dossier-card">
-      <strong style="color:var(--cyan);">🔍 Собранные улики (${state.clues.length}/4)</strong>
-      <ul style="margin:6px 0 0; padding-left:18px; font-size:0.82rem; line-height:1.45;">
-        ${cluesHtml}
-      </ul>
-    </div>
-  `;
-  el.dossierDialog.showModal();
-}
-
-function openBagModal() {
-  el.bagList.innerHTML = state.bag
-    .map(
-      (item) => `
-      <div class="bag-item">
-        <strong style="display:block; margin-bottom:4px; color:var(--gold);">${item.icon} ${item.title}</strong>
-        <span style="font-size:0.82rem; color:#d8d6e8; line-height:1.4;">${item.desc}</span>
-      </div>
-    `
-    )
-    .join("");
-  el.bagDialog.showModal();
-}
-
-function openLogModal() {
-  if (state.log.length === 0) {
-    el.logList.innerHTML = `<div class="log-item">История реплик пока пуста.</div>`;
-  } else {
-    el.logList.innerHTML = state.log
-      .slice(-25)
-      .map(
-        (entry) => `
-        <div class="log-item">
-          <strong style="color:${entry.thought ? "var(--cyan)" : "var(--gold)"}; font-size:0.8rem;">
-            ${entry.speaker}${entry.thought ? " (мысли)" : ""}
-          </strong>
-          <p style="margin:4px 0 0; font-size:0.85rem; line-height:1.4;">${entry.text}</p>
-        </div>
-      `
-      )
-      .join("");
+  if (v < 0) {
+    return {
+      title: "Склонность к Ванили",
+      desc: "Мягкая эмпатия и деликатность в общении с близкими."
+    };
   }
-  el.logDialog.showModal();
-}
-
-function showEndingScreen() {
-  state.mode = "ended";
-  saveState();
-  sound.fx("achiev");
-  haptic("success");
-
-  const summaryParts = [];
-  if (state.flags.stolePanties) {
-    summaryParts.push("Кружевные трусики Маши спрятаны у тебя в кармане — и она уже заметила пропажу!");
-  } else {
-    summaryParts.push("Ты не спалился на краже белья, сохранив доверие Маши перед завтрашним утром.");
-  }
-  if (state.flags.phoneUnlocked) {
-    summaryParts.push("Ты взломал её рабочий iPhone, узнал про приватку «Мария Боратовна» и утренний визит Ленки.");
-  }
-  if (state.flags.foundMaskCard) {
-    summaryParts.push("Ты связал чёрную карту с золотой маской с исчезновением своего отца 12 лет назад.");
-  }
-
-  el.endingFlavor.textContent = summaryParts.join(" ");
-  el.endingStatsGrid.innerHTML = `
-    <div class="stat-tile"><span>♥ Близость с Машей</span><strong>${state.stats.affection}</strong></div>
-    <div class="stat-tile"><span>🔥 Наглость / Разврат</span><strong>${state.stats.boldness}</strong></div>
-    <div class="stat-tile"><span>🛡 Доверие / Выдержка</span><strong>${state.stats.trust}</strong></div>
-    <div class="stat-tile"><span>🔍 Найдено улик</span><strong>${state.clues.length} / 4</strong></div>
-  `;
-
-  withViewTransition(() => {
-    el.titleScreen.hidden = true;
-    el.gameScreen.hidden = true;
-    el.endingScreen.hidden = false;
-  }, el.endingScreen);
-}
-
-// ==================== НАВИГАЦИЯ ЭКРАНОВ И СОБЫТИЯ ====================
-function switchToGameScreen() {
-  updateHUD();
-  withViewTransition(() => {
-    el.titleScreen.hidden = true;
-    el.endingScreen.hidden = true;
-    el.gameScreen.hidden = false;
-  }, el.gameScreen);
-}
-
-function syncSoundButtons() {
-  const icon = sound.muted ? "🔇" : "🔊";
-  el.btnSound.textContent = icon;
-  el.titleSoundBtn.textContent = icon;
-}
-
-function bindEvents() {
-  setupDialogLightDismissFallbacks();
-
-  el.btnNewGame.addEventListener("click", () => {
-    sound.fx("tap");
-    el.nameDialog.returnValue = "";
-    el.nameDialog.showModal();
-  });
-
-  el.nameDialog.addEventListener("close", () => {
-    const val = el.nameDialog.returnValue;
-    el.nameDialog.returnValue = "";
-    if (val !== "start") return;
-
-    const cleanName = (el.playerNameInput.value || "").trim() || "Артём";
-    state = createFreshState(cleanName);
-    activeSequence = null;
-    el.app.dataset.mode = "vn";
-    el.roomNav.hidden = true;
-    el.sandboxBanner.hidden = true;
-    el.hotspotLayer.innerHTML = "";
-    switchToGameScreen();
-    renderStep();
-  });
-
-  el.btnContinue.addEventListener("click", () => {
-    const saved = loadSavedState();
-    if (!saved) return;
-    sound.fx("tap");
-    state = saved;
-    switchToGameScreen();
-    if (state.mode === "sandbox") {
-      enterApartmentSandbox(state.currentRoom || "living");
-    } else if (state.mode === "ended") {
-      showEndingScreen();
-    } else {
-      el.app.dataset.mode = "vn";
-      el.roomNav.hidden = true;
-      el.sandboxBanner.hidden = true;
-      renderStep();
-    }
-  });
-
-  el.btnResetSave.addEventListener("click", () => {
-    localStorage.removeItem(SAVE_KEY);
-    refreshContinueButton();
-    showToast("Сохранение сброшено");
-  });
-
-  el.btnTitleDossier.addEventListener("click", openDossierModal);
-  el.btnDossier.addEventListener("click", openDossierModal);
-  el.btnBag.addEventListener("click", openBagModal);
-  el.btnLog.addEventListener("click", openLogModal);
-
-  el.btnHome.addEventListener("click", () => {
-    sound.stopAmbience();
-    refreshContinueButton();
-    withViewTransition(() => {
-      el.gameScreen.hidden = true;
-      el.endingScreen.hidden = true;
-      el.titleScreen.hidden = false;
-    }, el.titleScreen);
-  });
-
-  const onToggleSound = () => {
-    sound.toggleMute();
-    syncSoundButtons();
+  return {
+    title: "Точка баланса",
+    desc: "Характер только формируется между бережной чуткостью и решительным напором."
   };
-  el.btnSound.addEventListener("click", onToggleSound);
-  el.titleSoundBtn.addEventListener("click", onToggleSound);
+}
 
-  el.dialogueBox.addEventListener("click", advanceStep);
-  el.stageViewport.addEventListener("click", () => {
-    if (state.mode === "vn" || activeSequence) {
-      advanceStep();
-    }
-  });
+function openMcSmartphone(initialTab = mcPhoneActiveTab) {
+  mcPhoneActiveTab = initialTab;
+  mcActiveChatId = null;
+  setPhoneUnread(false);
 
-  for (const tab of el.roomNav.querySelectorAll(".room-tab")) {
-    tab.addEventListener("click", () => {
-      if (activeSequence) return;
-      sound.fx("tap");
-      haptic("light");
-      renderSandboxRoom(tab.dataset.room);
-    });
-  }
+  const clockMatch = (state.location || "").match(/\d{2}:\d{2}/);
+  dom.mcPhoneClock.textContent = clockMatch ? clockMatch[0] : "22:15";
 
-  el.confirmSleepDialog.addEventListener("close", () => {
-    const choice = el.confirmSleepDialog.returnValue;
-    el.confirmSleepDialog.returnValue = "";
-    if (choice !== "sleep") return;
+  updateMcPhoneTabButtons();
+  renderMcPhoneContent();
+  openModalDialog(dom.mcPhoneDialog);
+}
 
-    state.mode = "vn";
-    el.app.dataset.mode = "vn";
-    el.roomNav.hidden = true;
-    el.sandboxBanner.hidden = true;
-    el.hotspotLayer.innerHTML = "";
-    activeSequence = buildNightReturnSequence(state);
-    activeSeqIndex = 0;
-    onSequenceDone = null;
-    renderStep();
-  });
-
-  el.btnReplaySandbox.addEventListener("click", () => {
-    switchToGameScreen();
-    enterApartmentSandbox("living");
-  });
-
-  el.btnRestartFull.addEventListener("click", () => {
-    localStorage.removeItem(SAVE_KEY);
-    state = createFreshState(state.playerName || "Артём");
-    activeSequence = null;
-    el.app.dataset.mode = "vn";
-    el.roomNav.hidden = true;
-    el.sandboxBanner.hidden = true;
-    el.hotspotLayer.innerHTML = "";
-    switchToGameScreen();
-    renderStep();
+function updateMcPhoneTabButtons() {
+  dom.mcPhoneDialog.querySelectorAll("[data-mc-tab]").forEach((btn) => {
+    const active = btn.getAttribute("data-mc-tab") === mcPhoneActiveTab;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
   });
 }
 
-initTelegramSDK();
-refreshContinueButton();
-bindEvents();
+function renderMcPhoneContent() {
+  const container = dom.mcPhoneBody;
+  container.innerHTML = "";
+
+  if (mcPhoneActiveTab === "scales") {
+    const arch = getArchetypeSummary();
+    const pendulumPct = clamp(50 + state.player.vector * 10, 8, 92);
+    const loyaltyPct = clamp(((state.masha.loyalty + 1) / 5) * 100, 6, 100);
+    const riskPct = clamp((state.risk / 4) * 100, 4, 100);
+
+    let starsSvgHtml = "";
+    for (let i = 1; i <= 5; i++) {
+      const filled = i <= state.masha.stars;
+      starsSvgHtml += `
+        <svg class="icon-svg star-glyph${filled ? " filled" : ""}" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.9L12 3z" />
+        </svg>
+      `;
+    }
+
+    container.innerHTML = `
+      <div class="scale-card">
+        <div class="scale-card-head">
+          <span class="scale-card-title">Близость с Машей</span>
+          <span class="scale-card-badge">Уровень ${state.masha.stars} из 5</span>
+        </div>
+        <div class="stars-row" aria-label="Звёзд близости: ${state.masha.stars} из 5">${starsSvgHtml}</div>
+        <p class="scale-card-desc">
+          ${
+            state.masha.stars >= 1
+              ? "Первая искра доверия и домашней непринуждённости между вами уже зажглась."
+              : "Двенадцать лет разлуки только позади — Маша привыкает видеть в вас взрослого человека."
+          }
+        </p>
+      </div>
+
+      <div class="scale-card">
+        <div class="scale-card-head">
+          <span class="scale-card-title">Вектор характера</span>
+          <span class="scale-card-badge">${arch.title}</span>
+        </div>
+        <div class="pendulum-labels">
+          <span>Ваниль (${state.player.vanilla})</span>
+          <span>Баланс</span>
+          <span>Альфа (${state.player.alpha})</span>
+        </div>
+        <div class="pendulum-track">
+          <span class="pendulum-center-tick"></span>
+          <span class="pendulum-thumb" style="left: ${pendulumPct}%"></span>
+        </div>
+        <p class="scale-card-desc">${arch.desc}</p>
+      </div>
+
+      <div class="scale-card">
+        <div class="scale-card-head">
+          <span class="scale-card-title">Доверие Маши</span>
+          <span class="scale-card-badge">${state.masha.loyalty} ед.</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill loyalty" style="width: ${loyaltyPct}%"></div>
+        </div>
+        <p class="scale-card-desc">Определяет, насколько открыто и тепло Маша реагирует в личные моменты.</p>
+      </div>
+
+      <div class="scale-card">
+        <div class="scale-card-head">
+          <span class="scale-card-title">Риск и искушение</span>
+          <span class="scale-card-badge">${state.risk} ед.</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill risk" style="width: ${riskPct}%"></div>
+        </div>
+        <p class="scale-card-desc">Смелые тайные поступки открывают закрытые ракурсы, но повышают шанс прокола.</p>
+      </div>
+
+      <div class="scale-card">
+        <div class="scale-card-head">
+          <span class="scale-card-title">Связь с Катей</span>
+          <span class="scale-card-badge">${state.relations.katya > 0 ? "Тёплая связь" : "Дружеская"}</span>
+        </div>
+        <p class="scale-card-desc">Ваша союзница в интернате проверяет архив канцелярии по делу отца.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (mcPhoneActiveTab === "chats") {
+    if (mcActiveChatId && state.mcChats[mcActiveChatId]) {
+      const thread = state.mcChats[mcActiveChatId];
+      const backBtn = document.createElement("button");
+      backBtn.type = "button";
+      backBtn.className = "chat-back-inline";
+      backBtn.innerHTML = `
+        <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Все чаты</span>
+      `;
+      backBtn.addEventListener("click", () => {
+        mcActiveChatId = null;
+        sound.play("tap");
+        renderMcPhoneContent();
+      });
+      container.appendChild(backBtn);
+
+      const list = document.createElement("div");
+      list.className = "chat-messages";
+
+      if (thread.messages.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty-note";
+        empty.textContent = "Сообщений пока нет — только выписанный от руки номер.";
+        list.appendChild(empty);
+      } else {
+        thread.messages.forEach((msg) => {
+          const bubble = document.createElement("div");
+          bubble.className = `msg-bubble ${msg.dir === "out" ? "out" : "in"}`;
+          const attachmentsHtml = Array.isArray(msg.attachments)
+            ? `<div class="incoming-msg-attachments">${msg.attachments
+                .map((att) => `<span class="attachment-chip">${formatText(att)}</span>`)
+                .join("")}</div>`
+            : "";
+          bubble.innerHTML = `
+            <div class="msg-meta">
+              <strong>${formatText(thread.title)}</strong>
+              <span>${msg.time || ""}</span>
+            </div>
+            <p>${formatText(msg.text)}</p>
+            ${attachmentsHtml}
+          `;
+          list.appendChild(bubble);
+        });
+      }
+
+      container.appendChild(list);
+      return;
+    }
+
+    Object.values(state.mcChats).forEach((thread) => {
+      const lastMsg = thread.messages[thread.messages.length - 1];
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "chat-thread-btn";
+      card.innerHTML = `
+        <div class="thread-top">
+          <span class="thread-name">${formatText(thread.title)}</span>
+          <span class="thread-sub">${lastMsg ? lastMsg.time : "пусто"}</span>
+        </div>
+        <p class="thread-preview">${
+          lastMsg ? formatText(lastMsg.text) : "Текстовых сообщений пока не поступало."
+        }</p>
+      `;
+      card.addEventListener("click", () => {
+        mcActiveChatId = thread.id;
+        sound.play("tap");
+        renderMcPhoneContent();
+      });
+      container.appendChild(card);
+    });
+    return;
+  }
+
+  if (mcPhoneActiveTab === "clues") {
+    const clueHead = document.createElement("p");
+    clueHead.className = "section-subhead";
+    clueHead.textContent = `Зацепки и наблюдения (${state.clues.length} / ${Object.keys(CLUES_CATALOG).length})`;
+    container.appendChild(clueHead);
+
+    if (state.clues.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = "Пока не собрано ни одной зацепки. Внимательно слушайте собеседников и осматривайте детали.";
+      container.appendChild(empty);
+    } else {
+      state.clues.forEach((clueId) => {
+        const clue = CLUES_CATALOG[clueId];
+        if (!clue) return;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "clue-item-card";
+        card.innerHTML = `
+          <div class="thread-top">
+            <span class="thread-name">${clue.title}</span>
+            <span class="thread-sub">${clue.tag}</span>
+          </div>
+          <p class="thread-preview">${clue.summary}</p>
+        `;
+        card.addEventListener("click", () => openClueDetailModal(clue));
+        container.appendChild(card);
+      });
+    }
+
+    const itemsHead = document.createElement("p");
+    itemsHead.className = "section-subhead";
+    itemsHead.textContent = `Личные вещи (${state.items.length})`;
+    container.appendChild(itemsHead);
+
+    state.items.forEach((itemId) => {
+      const item = ITEMS_CATALOG[itemId];
+      if (!item) return;
+      const card = document.createElement("div");
+      card.className = "scale-card";
+      card.innerHTML = `
+        <div class="scale-card-head">
+          <span class="scale-card-title">${item.title}</span>
+          <span class="scale-card-badge">${item.subtitle}</span>
+        </div>
+        <p class="scale-card-desc">${item.desc}</p>
+      `;
+      container.appendChild(card);
+    });
+    return;
+  }
+
+  if (mcPhoneActiveTab === "log") {
+    if (state.toastHistory.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = "Здесь сохраняются все пост-отклики ваших решений.";
+      container.appendChild(empty);
+      return;
+    }
+
+    state.toastHistory.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "scale-card";
+      row.innerHTML = `
+        <div class="scale-card-head">
+          <span class="scale-card-title">${item.text}</span>
+          <span class="scale-card-badge">${item.time}</span>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+}
+
+async function openClueDetailModal(clue) {
+  sound.play("tap");
+  dom.clueDetailTag.textContent = clue.tag || "ЗАЦЕПКА";
+  dom.clueDetailTitle.textContent = clue.title;
+  dom.clueDetailSummary.textContent = clue.summary;
+  dom.clueDetailNote.textContent = clue.detail || "";
+
+  if (clue.image) {
+    const resolved = await resolveAssetUrl(clue.image);
+    if (resolved) {
+      dom.clueDetailImg.src = resolved;
+      dom.clueDetailImg.alt = clue.title;
+      dom.clueDetailImageWrap.hidden = false;
+    } else {
+      dom.clueDetailImageWrap.hidden = true;
+    }
+  } else {
+    dom.clueDetailImageWrap.hidden = true;
+  }
+
+  openModalDialog(dom.clueDetailDialog);
+}
+
+// ==================== ВТОРОЙ РАБОЧИЙ IPHONE МАШИ (PIN: 1408 + 3 ЧАТА) ====================
+function openMashaWorkPhone() {
+  pinBuffer = "";
+  mashaActiveChatId = null;
+
+  if (state.flags.masha_phone_unlocked) {
+    dom.mashaLockScreen.hidden = true;
+    dom.mashaUnlockedScreen.hidden = false;
+    renderMashaMessenger();
+  } else {
+    dom.mashaLockScreen.hidden = false;
+    dom.mashaUnlockedScreen.hidden = true;
+    dom.mashaPinHint.textContent = state.flags.saw_lake_photo_date
+      ? "Подсказка со снимка у кровати: летняя дата «14.08»"
+      : "Требуется 4-значный PIN. Присмотритесь к вещам на тумбочке у кровати.";
+    updatePinDotsUi();
+  }
+
+  openModalDialog(dom.mashaPhoneDialog);
+}
+
+function updatePinDotsUi(isError = false) {
+  dom.mashaPinDots.classList.toggle("is-error", isError);
+  dom.mashaPinDots.setAttribute("aria-label", `Введено цифр: ${pinBuffer.length} из 4`);
+  const dots = dom.mashaPinDots.querySelectorAll(".pin-dot");
+  dots.forEach((dot, idx) => {
+    dot.classList.toggle("filled", idx < pinBuffer.length);
+  });
+}
+
+function handleMashaPinInput(digitOrAction) {
+  if (state.flags.masha_phone_unlocked) return;
+
+  if (digitOrAction === "clear") {
+    pinBuffer = "";
+    sound.play("tap");
+    updatePinDotsUi();
+    return;
+  }
+
+  if (digitOrAction === "back") {
+    pinBuffer = pinBuffer.slice(0, -1);
+    sound.play("tap");
+    updatePinDotsUi();
+    return;
+  }
+
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += String(digitOrAction);
+  sound.play("key_beep");
+  haptic("light");
+  updatePinDotsUi();
+
+  if (pinBuffer.length === 4) {
+    if (pinBuffer === MASHA_PIN_CODE) {
+      sound.play("achiev");
+      haptic("success");
+      state.flags.masha_phone_unlocked = true;
+      scriptApi.markPropTaken("bedroom_masha_phone");
+      scriptApi.addClue("clue_masha_phone");
+      pendingPostPhoneSequence = true;
+      saveGame();
+
+      setTimeout(() => {
+        dom.mashaLockScreen.hidden = true;
+        dom.mashaUnlockedScreen.hidden = false;
+        renderMashaMessenger();
+      }, 220);
+    } else {
+      sound.play("error");
+      haptic("error");
+      dom.mashaPinHint.textContent = state.flags.saw_lake_photo_date
+        ? "Неверный код. На рамке у качелей выведена дата: 14.08"
+        : "Неверный код-пароль. Изучите фотографию у ночника.";
+      updatePinDotsUi(true);
+      setTimeout(() => {
+        pinBuffer = "";
+        updatePinDotsUi(false);
+      }, 420);
+    }
+  }
+}
+
+function renderMashaMessenger() {
+  const container = dom.mashaMessengerBody;
+  container.innerHTML = "";
+
+  if (mashaActiveChatId && MASHA_WORK_PHONE_CHATS[mashaActiveChatId]) {
+    const chat = MASHA_WORK_PHONE_CHATS[mashaActiveChatId];
+    state.flags.masha_chats_read[chat.id] = true;
+
+    dom.btnMashaChatBack.hidden = false;
+    dom.mashaHeaderTitle.textContent = chat.title;
+
+    const list = document.createElement("div");
+    list.className = "chat-messages";
+
+    chat.messages.forEach((msg) => {
+      const bubble = document.createElement("div");
+      bubble.className = `msg-bubble ${msg.dir === "out" ? "out" : "in"}`;
+      bubble.innerHTML = `
+        <div class="msg-meta">
+          <strong>${formatText(msg.sender)}</strong>
+          <span>${msg.time}</span>
+        </div>
+        <p>${formatText(msg.text)}</p>
+      `;
+      list.appendChild(bubble);
+    });
+
+    container.appendChild(list);
+    saveGame();
+    return;
+  }
+
+  dom.btnMashaChatBack.hidden = true;
+  dom.mashaHeaderTitle.textContent = "Чаты Маши (Рабочий iPhone)";
+
+  Object.values(MASHA_WORK_PHONE_CHATS).forEach((chat) => {
+    const lastMsg = chat.messages[chat.messages.length - 1];
+    const isRead = Boolean(state.flags.masha_chats_read?.[chat.id]);
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "chat-thread-btn";
+    card.innerHTML = `
+      <div class="thread-top">
+        <span class="thread-name">${chat.title}</span>
+        <span class="thread-sub">${isRead ? lastMsg.time : `Новое • ${lastMsg.time}`}</span>
+      </div>
+      <p class="thread-preview">${formatText(lastMsg.text)}</p>
+    `;
+    card.addEventListener("click", () => {
+      mashaActiveChatId = chat.id;
+      sound.play("tap");
+      renderMashaMessenger();
+    });
+    container.appendChild(card);
+  });
+}
+
+// ==================== СИСТЕМНОЕ МЕНЮ И ФИНАЛ ПРОЛОГА ====================
+function openSystemMenu() {
+  renderBacklogList();
+  syncSoundUi();
+  syncMotionUi();
+  dom.btnTextSpeedToggle.textContent = prefs.textSpeed === "instant" ? "Мгновенная" : "Плавная";
+  openModalDialog(dom.systemMenuDialog);
+}
+
+function renderBacklogList() {
+  dom.backlogList.innerHTML = "";
+  if (!state.backlog || state.backlog.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-note";
+    empty.textContent = "История реплик пока пуста.";
+    dom.backlogList.appendChild(empty);
+    return;
+  }
+
+  [...state.backlog].reverse().forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "backlog-entry";
+    item.innerHTML = `
+      <span class="backlog-speaker">${entry.speaker}</span>
+      <p class="backlog-text">${entry.text}</p>
+    `;
+    dom.backlogList.appendChild(item);
+  });
+}
+
+function completePrologueFinale() {
+  state.prologueCompleted = true;
+  state.mode = "epilogue";
+  dom.vnBottomPanel.hidden = true;
+  dom.epilogueBar.hidden = false;
+  saveGame();
+
+  renderEndingSummary();
+  openModalDialog(dom.endingDialog);
+}
+
+function renderEndingSummary() {
+  const arch = getArchetypeSummary();
+  const totalClues = Object.keys(CLUES_CATALOG).length;
+
+  const branchNotes = [
+    state.flags.morning_high_loyalty
+      ? "Утро после душа: Маша встретила вас с тёплой улыбкой и доверила выбор образа (получена ★1 Близости)."
+      : "Утро после душа: не хватило очков Доверия — Маша обозначила личные границы под одной крышей.",
+    state.flags.masha_phone_unlocked
+      ? "Рабочий iPhone Маши взломан: раскрыты ужин с Градовым у Артура и тайные поиски Машей следов вашего отца."
+      : "Рабочий iPhone Маши в спальне остался неразблокированным — часть её двойной жизни скрыта.",
+    "Сообщение Кати из архива: часы Виктора чинили в ателье на Старом Арбате, а весной кто-то живой узнавал дату вашего выпуска.",
+    "На пороге квартиры появилась Ленка — лучшая подруга Маши без тормозов и с рентгеновским взглядом."
+  ];
+
+  dom.endingSummaryBody.innerHTML = `
+    <p class="dialog-lead">
+      Пролог завершён. Все ваши решения, вектор характера и найденные улики сохранены для <strong>Главы 1</strong>.
+    </p>
+    <div class="ending-stat-grid">
+      <div class="ending-stat-box">
+        <span>Архетип ${formatText("{mc_gen}")}</span>
+        <strong>${arch.title}</strong>
+      </div>
+      <div class="ending-stat-box">
+        <span>Близость с Машей</span>
+        <strong>★${state.masha.stars} / 5</strong>
+      </div>
+      <div class="ending-stat-box">
+        <span>Доверие / Риск</span>
+        <strong>${state.masha.loyalty} / ${state.risk}</strong>
+      </div>
+      <div class="ending-stat-box">
+        <span>Собрано зацепок</span>
+        <strong>${state.clues.length} из ${totalClues}</strong>
+      </div>
+    </div>
+    <ul class="ending-recap-list">
+      ${branchNotes.map((line) => `<li>${line}</li>`).join("")}
+    </ul>
+  `;
+}
+
+// ==================== ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ (TITLE <-> GAME) ====================
+function refreshTitleButtons() {
+  const saved = loadSavedGame();
+  if (saved) {
+    dom.btnContinue.hidden = false;
+    dom.btnResetTitle.hidden = false;
+    dom.continueMeta.textContent = `${saved.player?.name || "Артём"} • ${saved.location || "Москва"}`;
+  } else {
+    dom.btnContinue.hidden = true;
+    dom.btnResetTitle.hidden = true;
+  }
+}
+
+function showScreen(screenName) {
+  const isGame = screenName === "game";
+  dom.titleScreen.classList.toggle("active", !isGame);
+  dom.gameScreen.classList.toggle("active", isGame);
+  setCleanFrame(false);
+
+  if (!isGame) {
+    sound.stopAmbience();
+    stopStageVideoDom();
+    fxEngine?.setMode("none");
+    refreshTitleButtons();
+  } else {
+    fxEngine?.resize();
+    syncStageVideoPlayback();
+  }
+}
+
+function startFreshGameWithName(playerName) {
+  clearSavedGame();
+  state = createInitialState(playerName);
+  state.started = true;
+  ephemeralQueue = [];
+  activeChoices = null;
+  lastSpokenContext = "";
+  currentDisplayedBgUrl = "";
+  stopStageVideoDom();
+
+  setPhoneUnread(false);
+  showScreen("game");
+  jumpToStoryBlock("Intro_1");
+}
+
+function resumeSavedGame() {
+  const saved = loadSavedGame();
+  if (!saved) {
+    openModalDialog(dom.nameDialog);
+    return;
+  }
+
+  state = saved;
+  ephemeralQueue = [];
+  activeChoices = null;
+  currentDisplayedBgUrl = "";
+  stopStageVideoDom();
+
+  setPhoneUnread(state.phoneUnread);
+  dom.hudLocationBadge.textContent = state.location || "МОСКВА";
+  showScreen("game");
+
+  if (state.lastAmbience) {
+    sound.setAmbience(state.lastAmbience);
+  }
+
+  if (state.mode === "sandbox") {
+    enterPenthouseSandbox(state.sandbox?.currentRoom || "living");
+    return;
+  }
+
+  if (state.mode === "epilogue" || state.prologueCompleted) {
+    applyStageBackground(state.lastBg, state.lastCam);
+    fxEngine?.setMode(state.lastFxShader || "none");
+    completePrologueFinale();
+    return;
+  }
+
+  applyStageBackground(state.lastBg, state.lastCam);
+  applyStageVideo(state.lastVideo);
+  applyStageSprite(state.lastSprite);
+  fxEngine?.setMode(state.lastFxShader || "none");
+  runCurrentStoryStep();
+}
+
+// ==================== СОБЫТИЯ ИНТЕРФЕЙСА И КЛАВИАТУРЫ ====================
+function bindEvents() {
+  dom.titleSoundBtn.addEventListener("click", toggleGlobalSound);
+  dom.btnSound.addEventListener("click", toggleGlobalSound);
+  dom.btnMenuSoundToggle.addEventListener("click", toggleGlobalSound);
+  dom.btnMotion?.addEventListener("click", toggleMotionPaused);
+  dom.btnMenuMotionToggle?.addEventListener("click", toggleMotionPaused);
+  window
+    .matchMedia?.("(prefers-reduced-motion: reduce)")
+    ?.addEventListener?.("change", syncMotionUi);
+
+  dom.btnNewGame.addEventListener("click", () => {
+    sound.play("tap");
+    dom.playerNameInput.value = state.player?.name || "Артём";
+    openModalDialog(dom.nameDialog);
+  });
+
+  dom.nameForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    sound.play("choice");
+    const chosenName = dom.playerNameInput.value.trim() || "Артём";
+    closeModalDialog(dom.nameDialog);
+    startFreshGameWithName(chosenName);
+  });
+
+  dom.btnContinue.addEventListener("click", () => {
+    sound.play("choice");
+    resumeSavedGame();
+  });
+
+  dom.btnResetTitle.addEventListener("click", () => {
+    sound.play("tap");
+    clearSavedGame();
+    refreshTitleButtons();
+    enqueueToast("Сохранение очищено");
+  });
+
+  // Верхний HUD
+  dom.btnMcPhone.addEventListener("click", () => {
+    sound.play("tap");
+    haptic("light");
+    openMcSmartphone();
+  });
+
+  dom.btnCleanFrame.addEventListener("click", (e) => {
+    e.stopPropagation();
+    sound.play("tap");
+    setCleanFrame(!dom.appRoot.classList.contains("clean-frame"));
+  });
+
+  dom.btnMenu.addEventListener("click", () => {
+    sound.play("tap");
+    openSystemMenu();
+  });
+
+  // Выход из режима «Чистый кадр» кликом в любую точку сцены
+  dom.stageViewport.addEventListener("click", () => {
+    if (dom.appRoot.classList.contains("clean-frame")) {
+      setCleanFrame(false);
+    }
+  });
+
+  // Продвижение реплик кликом или клавишами Space / Enter
+  dom.dialogueBox.addEventListener("click", handleAdvanceAction);
+  dom.dialogueBox.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleAdvanceAction();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (dom.mashaPhoneDialog.open && !state.flags.masha_phone_unlocked) {
+      if (/^[0-9]$/.test(e.key)) {
+        handleMashaPinInput(e.key);
+        return;
+      }
+      if (e.key === "Backspace") {
+        handleMashaPinInput("back");
+        return;
+      }
+    }
+
+    if (isAnyModalDialogOpen() || !dom.gameScreen.classList.contains("active")) return;
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleAdvanceAction();
+    }
+  });
+
+  // Вкладки смартфона Артёма
+  dom.mcPhoneDialog.querySelectorAll("[data-mc-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mcPhoneActiveTab = btn.getAttribute("data-mc-tab");
+      mcActiveChatId = null;
+      sound.play("tap");
+      updateMcPhoneTabButtons();
+      renderMcPhoneContent();
+    });
+  });
+
+  // PIN-клавиатура и кнопка «Назад» в рабочем iPhone Маши
+  dom.mashaPinPad.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    if (btn.hasAttribute("data-pin-digit")) {
+      handleMashaPinInput(btn.getAttribute("data-pin-digit"));
+    } else if (btn.hasAttribute("data-pin-action")) {
+      handleMashaPinInput(btn.getAttribute("data-pin-action"));
+    }
+  });
+
+  dom.btnMashaChatBack.addEventListener("click", () => {
+    mashaActiveChatId = null;
+    sound.play("tap");
+    renderMashaMessenger();
+  });
+
+  // Песочница Intro_4: быстрая кнопка «Лечь» и подтверждение
+  dom.btnQuickSleep.addEventListener("click", () => {
+    sound.play("tap");
+    openSleepConfirmation();
+  });
+
+  dom.btnConfirmSleepNow.addEventListener("click", () => {
+    sound.play("choice");
+    closeModalDialog(dom.confirmSleepDialog);
+    jumpToStoryBlock("Intro_5");
+  });
+
+  // Вкладки системного меню
+  dom.systemMenuDialog.querySelectorAll("[data-menu-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.getAttribute("data-menu-tab");
+      sound.play("tap");
+      dom.systemMenuDialog.querySelectorAll("[data-menu-tab]").forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      dom.menuHistoryPane.hidden = tab !== "history";
+      dom.menuSettingsPane.hidden = tab !== "settings";
+    });
+  });
+
+  dom.btnTextSpeedToggle.addEventListener("click", () => {
+    prefs.textSpeed = prefs.textSpeed === "instant" ? "smooth" : "instant";
+    savePrefs();
+    sound.play("tap");
+    dom.btnTextSpeedToggle.textContent = prefs.textSpeed === "instant" ? "Мгновенная" : "Плавная";
+  });
+
+  dom.btnReturnTitle.addEventListener("click", () => {
+    sound.play("tap");
+    closeModalDialog(dom.systemMenuDialog);
+    showScreen("title");
+  });
+
+  dom.btnResetProgressMenu.addEventListener("click", () => {
+    sound.play("tap");
+    if (!resetConfirmArmed) {
+      resetConfirmArmed = true;
+      dom.btnResetProgressMenu.textContent = "Нажмите ещё раз для полного сброса";
+      return;
+    }
+    resetConfirmArmed = false;
+    clearSavedGame();
+    closeModalDialog(dom.systemMenuDialog);
+    showScreen("title");
+    enqueueToast("Прогресс сброшен");
+  });
+
+  // Кнопки экрана итогов Пролога + плашки эпилога
+  dom.btnEndingOpenPhone.addEventListener("click", () => {
+    sound.play("tap");
+    closeModalDialog(dom.endingDialog);
+    openMcSmartphone("scales");
+  });
+
+  const replaySandboxHandler = () => {
+    sound.play("choice");
+    closeModalDialog(dom.endingDialog);
+    state.prologueCompleted = false;
+    enterPenthouseSandbox("living");
+  };
+
+  const restartPrologueHandler = () => {
+    sound.play("choice");
+    closeModalDialog(dom.endingDialog);
+    openModalDialog(dom.nameDialog);
+  };
+
+  dom.btnEndingReplaySandbox.addEventListener("click", replaySandboxHandler);
+  dom.btnEpilogueSandbox.addEventListener("click", replaySandboxHandler);
+  dom.btnEndingRestart.addEventListener("click", restartPrologueHandler);
+  dom.btnEpilogueRestart.addEventListener("click", restartPrologueHandler);
+
+  dom.btnReopenEnding.addEventListener("click", () => {
+    sound.play("tap");
+    renderEndingSummary();
+    openModalDialog(dom.endingDialog);
+  });
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+function bootstrap() {
+  initTelegramMiniApp();
+  sound.setMuted(prefs.muted);
+  syncSoundUi();
+
+  fxEngine = new FxEngine(dom.fxCanvas);
+  syncMotionUi();
+  setupDialogs();
+  bindEvents();
+  refreshTitleButtons();
+  initOptionalV2Assets();
+
+  // Восстановление сохранения из Telegram CloudStorage, если локальное хранилище пусто
+  if (!loadSavedGame() && tg?.CloudStorage?.getItem) {
+    try {
+      tg.CloudStorage.getItem(SAVE_KEY, (err, val) => {
+        if (!err && val && !loadSavedGame()) {
+          localStorage.setItem(SAVE_KEY, val);
+          refreshTitleButtons();
+        }
+      });
+    } catch {}
+  }
+}
+
+bootstrap();

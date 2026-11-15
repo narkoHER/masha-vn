@@ -1,256 +1,826 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="dark">
-  <title>МАША — Эпизод 0: Сводный</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#08090e" />
+  <title>МАША — Визуальная новелла</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div id="app" class="app-shell" data-mode="title">
-
-    <!-- ==================== ЭКРАН МЕНЮ (TITLE) ==================== -->
-    <section id="titleScreen" class="screen title-screen" tabindex="-1" aria-label="Главное меню">
-      <div class="title-bg-wrap">
+  <div id="appRoot" class="app-shell">
+    <!-- ==================== ТИТУЛЬНЫЙ ЭКРАН ==================== -->
+    <section id="titleScreen" class="screen title-screen active" aria-label="Главное меню">
+      <div class="title-media-wrap">
         <img
           id="titleCoverImg"
           class="title-cover-img"
-          src="./assets/title_cover.webp"
-          alt="Маша у панорамного окна ночного пентхауса"
+          src="./assets/v2/title_cover_v2.webp"
+          alt="Маша — вечерняя Москва"
           width="720"
           height="1280"
           fetchpriority="high"
-        >
-        <div class="title-gradient"></div>
+          decoding="async"
+        />
+        <div class="title-vignette" aria-hidden="true"></div>
       </div>
 
-      <header class="title-top-badge">
-        <span class="pill-tag">ИНТЕРАКТИВНЫЙ СЕРИАЛ • 18+</span>
-        <button id="titleSoundBtn" type="button" class="icon-btn" aria-label="Переключить звук">🔊</button>
-      </header>
+      <div class="title-top-bar">
+        <span class="title-chapter-pill">ПРОЛОГ • ЧУЖАЯ МОСКВА</span>
+        <button
+          id="titleSoundBtn"
+          class="hud-icon-btn"
+          type="button"
+          aria-label="Включить звук"
+          aria-pressed="false"
+          title="Звук"
+        >
+          <svg class="icon-svg icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5L6 9H3v6h3l5 4V5z" />
+            <path d="M22 9l-6 6M16 9l6 6" />
+          </svg>
+          <svg class="icon-svg icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5L6 9H3v6h3l5 4V5z" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+          </svg>
+        </button>
+      </div>
 
-      <div class="title-hero-content">
-        <p class="series-kicker">МАРИЯ БОРАТОВНА • ГЛАВА 0</p>
-        <h1 class="game-logo">ЧУЖАЯ КРОВЬ</h1>
-        <p class="game-subtitle">Один звонок из прошлой жизни. Роскошная квартира с чужими секретами. И сводная сестра, которая явно не просто «риэлтор».</p>
+      <div class="title-content">
+        <p class="title-eyebrow">ИНТЕРАКТИВНАЯ ИСТОРИЯ</p>
+        <h1 class="title-logo">МАША</h1>
+        <p class="title-tagline">
+          Двенадцать лет тишины, сломанные отцовские часы и ночные огни тридцать второго этажа.
+        </p>
 
         <div class="title-actions">
-          <button id="btnNewGame" type="button" class="btn-primary">Начать историю</button>
-          <button id="btnContinue" type="button" class="btn-secondary" hidden>Продолжить</button>
-          <div class="title-sub-row">
-            <button id="btnTitleDossier" type="button" class="btn-ghost">★ Система звёзд</button>
-            <button id="btnResetSave" type="button" class="btn-ghost">Сброс</button>
-          </div>
+          <button id="btnContinue" class="btn-luxury btn-primary" type="button" hidden>
+            <span>Продолжить</span>
+            <small id="continueMeta" class="btn-submeta"></small>
+          </button>
+          <button id="btnNewGame" class="btn-luxury btn-primary" type="button">
+            <span>Начать историю</span>
+          </button>
+          <button id="btnResetTitle" class="btn-ghost-minimal" type="button" hidden>
+            Сбросить прогресс
+          </button>
         </div>
       </div>
     </section>
 
-    <!-- ==================== ИГРОВАЯ СЦЕНА (VN + SANDBOX) ==================== -->
-    <main id="gameScreen" class="screen game-screen" tabindex="-1" hidden>
-      <!-- Верхний HUD -->
-      <header class="hud-bar">
-        <button id="btnHome" type="button" class="hud-chip" aria-label="В главное меню">☰</button>
-        <button id="btnDossier" type="button" class="hud-chip hud-stars" aria-label="Открыть статус и звёзды">
-          <span class="star-row" id="hudStars">☆☆☆☆☆</span>
-          <span class="hud-stat-mini" id="hudClues">🔍 0/4</span>
-        </button>
-        <div class="hud-right">
-          <button id="btnBag" type="button" class="hud-chip" aria-label="Открыть рюкзак">
-            🎒 <span id="hudBagCount">1</span>
+    <!-- ==================== ИГРОВОЙ ЭКРАН 9:16 ==================== -->
+    <main id="gameScreen" class="screen game-screen" aria-label="Сцена новеллы">
+      <!-- Минималистичный 1-рядный верхний HUD (< 12% высоты вьюпорта) -->
+      <header id="hudBar" class="hud-bar">
+        <div class="hud-location" id="hudLocationWrap">
+          <span class="hud-loc-dot" aria-hidden="true"></span>
+          <span id="hudLocationBadge" class="hud-loc-text">ПРОХОДНАЯ • 08:45</span>
+        </div>
+
+        <div class="hud-controls" role="toolbar" aria-label="Управление сценой">
+          <button
+            id="btnMcPhone"
+            class="hud-icon-btn"
+            type="button"
+            aria-label="Смартфон героя (шкалы, чаты, улики)"
+            title="Смартфон"
+          >
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+              <path d="M10 5.5h4" />
+              <circle cx="12" cy="18.5" r="0.8" fill="currentColor" stroke="none" />
+            </svg>
+            <span id="phoneUnreadDot" class="hud-unread-dot" hidden aria-hidden="true"></span>
           </button>
-          <button id="btnLog" type="button" class="hud-chip" aria-label="История реплик">💬</button>
-          <button id="btnSound" type="button" class="hud-chip" aria-label="Переключить звук">🔊</button>
+
+          <button
+            id="btnSound"
+            class="hud-icon-btn"
+            type="button"
+            aria-label="Включить звук"
+            aria-pressed="false"
+            title="Звук"
+          >
+            <svg class="icon-svg icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5L6 9H3v6h3l5 4V5z" />
+              <path d="M22 9l-6 6M16 9l6 6" />
+            </svg>
+            <svg class="icon-svg icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5L6 9H3v6h3l5 4V5z" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+          </button>
+
+          <button
+            id="btnMotion"
+            class="hud-icon-btn"
+            type="button"
+            data-motion-paused="false"
+            aria-label="Приостановить анимацию кадра"
+            title="Анимация кадра"
+          >
+            <svg class="icon-svg icon-motion-pause" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="7" y="5" width="3.5" height="14" rx="1" />
+              <rect x="13.5" y="5" width="3.5" height="14" rx="1" />
+            </svg>
+            <svg class="icon-svg icon-motion-play" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5.5v13l10-6.5-10-6.5z" />
+            </svg>
+          </button>
+
+          <button
+            id="btnCleanFrame"
+            class="hud-icon-btn"
+            type="button"
+            aria-label="Чистый кадр (скрыть интерфейс)"
+            aria-pressed="false"
+            title="Чистый кадр"
+          >
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+              <circle cx="12" cy="12" r="2.8" />
+            </svg>
+          </button>
+
+          <button
+            id="btnMenu"
+            class="hud-icon-btn"
+            type="button"
+            aria-label="Меню и история реплик"
+            title="Меню"
+          >
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h11" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <!-- Тосты уведомлений (в стиле Amnesia) -->
-      <div id="toastStack" class="toast-stack" aria-live="polite"></div>
-
-      <!-- Визуальная сцена 9:16 -->
+      <!-- 4-слойная сцена + процедурный 60fps Canvas -->
       <div id="stageViewport" class="stage-viewport">
+        <!-- Слой 1: Двойной буфер фонов и CG -->
         <img
-          id="stageBg"
-          class="stage-bg"
-          src="./assets/sc1_trolleybus_mc.webp"
-          alt="Текущий кадр сцены"
+          id="stageBgBack"
+          class="stage-bg stage-bg-back"
+          src="./assets/v2/bg_orphanage_gates.webp"
+          alt=""
           width="720"
           height="1280"
           fetchpriority="low"
-        >
+          decoding="async"
+        />
+        <img
+          id="stageBg"
+          class="stage-bg stage-bg-front"
+          src="./assets/v2/bg_orphanage_gates.webp"
+          alt="Иллюстрация сцены"
+          width="720"
+          height="1280"
+          fetchpriority="high"
+          decoding="async"
+        />
+
+        <!-- Кинематографичный видеослой Kling 2.5 (бесшовный loop 9:16 поверх статичного кадра) -->
+        <video
+          id="stageVideo"
+          class="stage-video"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          width="720"
+          height="1280"
+          hidden
+          aria-hidden="true"
+        ></video>
+
         <div id="stagePlaceholder" class="stage-placeholder" hidden>
-          <span class="placeholder-tag">КАДР В СБОРКЕ</span>
-          <strong id="placeholderName">scene_tag</strong>
-          <p id="placeholderDesc"></p>
+          <span class="stage-placeholder-tag">СЦЕНА</span>
+          <p id="stagePlaceholderLabel" class="stage-placeholder-text"></p>
         </div>
 
-        <!-- Слой спрайта персонажа (Маша крупным планом в диалогах) -->
-        <div id="spriteLayer" class="sprite-layer" hidden>
+        <!-- Слой 2: Интерактивно исчезающие предметы в песочнице Intro_4 -->
+        <div id="roomPropsLayer" class="room-props-layer" hidden aria-hidden="true"></div>
+
+        <!-- Слой 3: Спрайт персонажа (кофейня / прихожая) -->
+        <div id="spriteLayer" class="sprite-layer" aria-hidden="true">
           <img
             id="stageSprite"
             class="stage-sprite"
-            src="./assets/spr_masha_warm_smile.webp"
-            alt="Маша"
-            width="640"
-            height="854"
+            src=""
+            alt=""
+            width="720"
+            height="1280"
             fetchpriority="low"
-          >
+            decoding="async"
+            hidden
+          />
         </div>
 
-        <!-- Оверлей улики (часы отца vs визитка с маской) -->
-        <div id="propCardOverlay" class="prop-card-overlay" hidden>
-          <img
-            id="propCardImg"
-            src="./assets/clue_mask_watch.webp"
-            alt="Крупный план улики"
-            width="640"
-            height="478"
-            fetchpriority="low"
-          >
-        </div>
+        <!-- Слой 4: 60fps Canvas атмосферных шейдеров -->
+        <canvas id="fxCanvas" class="fx-canvas" aria-hidden="true"></canvas>
 
-        <!-- Слой интерактивных хотспотов (в катсценах и песочнице) -->
-        <div id="hotspotLayer" class="hotspot-layer"></div>
-
-        <!-- Подсказка режима осмотра -->
-        <div id="sandboxBanner" class="sandbox-banner" hidden>
-          <span class="pulse-dot"></span>
-          <span id="sandboxRoomTitle">Гостиная Маши — свободный осмотр</span>
-        </div>
-      </div>
-
-      <!-- Нижний блок: Диалог ИЛИ Навигация песочницы -->
-      <div id="vnBottomPanel" class="vn-bottom-panel">
-        <!-- Меню выборов -->
-        <div id="choicePanel" class="choice-panel" hidden></div>
-
-        <!-- Диалоговая карточка (с портретом ГГ когда говорит/думает ГГ) -->
-        <article id="dialogueBox" class="dialogue-box" role="region" aria-label="Диалог">
-          <div class="dialogue-header">
-            <div id="mcAvatarWrap" class="speaker-avatar-wrap" hidden>
-              <div id="mcAvatarSprite" class="mc-avatar-sprite" data-mood="neutral"></div>
-            </div>
-            <div class="dialogue-meta">
-              <span id="speakerName" class="speaker-name">Артём</span>
-              <span id="speakerTag" class="speaker-tag" hidden>мысли</span>
-            </div>
-            <span class="tap-hint" id="tapHint">ТАП ›</span>
+        <!-- Крупный план улики / предмета поверх кадра -->
+        <figure id="propCardOverlay" class="prop-card-overlay" hidden>
+          <div class="prop-card-frame">
+            <img
+              id="propCardImg"
+              class="prop-card-img"
+              src=""
+              alt="Деталь сцены"
+              width="640"
+              height="640"
+              fetchpriority="low"
+              decoding="async"
+            />
           </div>
-          <p id="dialogueText" class="dialogue-text"></p>
-        </article>
+        </figure>
+
+        <!-- Входящее сообщение Кати на экране сцены (Intro_6) -->
+        <aside id="incomingMsgOverlay" class="incoming-msg-card" hidden aria-label="Входящее сообщение">
+          <div class="incoming-msg-head">
+            <span class="incoming-msg-badge">ВХОДЯЩЕЕ СООБЩЕНИЕ</span>
+            <span id="incomingMsgMeta" class="incoming-msg-meta"></span>
+          </div>
+          <p id="incomingMsgSender" class="incoming-msg-sender"></p>
+          <p id="incomingMsgBody" class="incoming-msg-body"></p>
+          <div class="incoming-msg-attachments">
+            <span class="attachment-chip">
+              <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="8.5" cy="10" r="1.5" />
+                <path d="M21 16l-5-5L7 19" />
+              </svg>
+              Опись №114/02
+            </span>
+            <span class="attachment-chip">
+              <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 7.5V12l3 2" />
+              </svg>
+              Штамп: Часовое ателье • Арбат
+            </span>
+          </div>
+        </aside>
+
+        <!-- Ненавязчивый статус песочницы Intro_4 -->
+        <div id="sandboxBanner" class="sandbox-banner" hidden>
+          <div class="sandbox-banner-main">
+            <span class="sandbox-banner-kicker">ОСМОТР АПАРТАМЕНТОВ</span>
+            <span id="sandboxRoomTitle" class="sandbox-banner-title">Гостиная</span>
+          </div>
+          <span id="sandboxGoalCounter" class="sandbox-banner-count">0 / 4</span>
+        </div>
+
+        <!-- Хотспоты песочницы Intro_4 -->
+        <div id="hotspotLayer" class="hotspot-layer" hidden></div>
+
+        <!-- Подсказка выхода из режима «Чистый кадр» -->
+        <div id="cleanFrameHint" class="clean-frame-hint" hidden>
+          Коснитесь экрана, чтобы вернуть интерфейс
+        </div>
+
+        <!-- Неблокирующая плашка финала Пролога (если окно итогов закрыто кликом мимо) -->
+        <div id="epilogueBar" class="epilogue-bar" hidden>
+          <div class="epilogue-bar-text">
+            <span class="epilogue-kicker">ПРОЛОГ ЗАВЕРШЁН</span>
+            <strong>Глава 1 «Утро на троих» — в разработке</strong>
+          </div>
+          <div class="epilogue-bar-actions">
+            <button id="btnReopenEnding" class="btn-epilogue-chip" type="button">Итоги</button>
+            <button id="btnEpilogueSandbox" class="btn-epilogue-chip" type="button">Пентхаус</button>
+            <button id="btnEpilogueRestart" class="btn-epilogue-chip" type="button">Заново</button>
+          </div>
+        </div>
       </div>
 
-      <!-- Навигация по комнатам квартиры (Режим Песочницы) -->
-      <nav id="roomNav" class="room-nav" aria-label="Комнаты квартиры" hidden>
-        <button type="button" class="room-tab is-active" data-room="living">🛋 Гостиная</button>
-        <button type="button" class="room-tab" data-room="bathroom">🚿 Ванная</button>
-        <button type="button" class="room-tab" data-room="bedroom">🛏 Спальня</button>
-        <button type="button" class="room-tab" data-room="kitchen">🥂 Кухня</button>
+      <!-- Нижний безрамочный кинематографичный слой реплик и выборов -->
+      <section id="vnBottomPanel" class="vn-bottom-panel" aria-label="Диалог и выбор">
+        <div id="choiceWrap" class="choice-wrap" hidden>
+          <p id="choiceContextQuote" class="choice-context-quote" hidden></p>
+          <div id="choicePanel" class="choice-panel" role="group" aria-label="Варианты действия"></div>
+        </div>
+
+        <div id="dialogueBox" class="dialogue-veil" tabindex="0" role="button" aria-label="Следующая реплика">
+          <div id="speakerRow" class="speaker-row">
+            <div id="speakerAvatarWrap" class="speaker-avatar-wrap" hidden aria-hidden="true">
+              <div id="speakerAvatarSprite" class="speaker-avatar-sprite"></div>
+              <span id="speakerAvatarFallback" class="speaker-avatar-monogram" hidden></span>
+            </div>
+            <div class="speaker-meta">
+              <span id="speakerName" class="speaker-name"></span>
+              <span id="speakerRoleTag" class="speaker-role-tag" hidden>Мысли</span>
+            </div>
+          </div>
+
+          <p id="dialogueText" class="dialogue-text"></p>
+
+          <div class="dialogue-footer" aria-hidden="true">
+            <span class="dialogue-continue-line"></span>
+            <svg class="dialogue-chevron" viewBox="0 0 24 24">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Нижняя навигация по 4 комнатам пентхауса (только в Intro_4) -->
+      <nav id="roomNav" class="room-nav" aria-label="Комнаты пентхауса" hidden>
+        <div id="roomTabs" class="room-tabs"></div>
+        <button id="btnQuickSleep" class="room-sleep-btn" type="button">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" />
+          </svg>
+          <span>Лечь</span>
+        </button>
       </nav>
     </main>
-
-    <!-- ==================== ЭКРАН ИТОГОВ ПРОЛОГА ==================== -->
-    <section id="endingScreen" class="screen ending-screen" tabindex="-1" hidden>
-      <div class="ending-card">
-        <span class="pill-tag">КОНЕЦ ПРОЛОГА • ДЕМО</span>
-        <h2 id="endingHeading">Глава 0 пройдена!</h2>
-        <p id="endingFlavor" class="ending-flavor"></p>
-
-        <div id="endingStatsGrid" class="ending-stats-grid"></div>
-
-        <div class="next-chapter-box">
-          <h3>Что ждёт в Главе 1 «Утро без стука»:</h3>
-          <ul>
-            <li>Утренний визит хищной подруги <strong>Ленки</strong>, решившей лично проверить «скромного братика» пока Маша в душе.</li>
-            <li>Первое повышение до <strong>★1 Звезды</strong> с Машей: ревность, случайное подглядывание и допрос про найденные трусики.</li>
-            <li>Тайна чёрной визитки с <strong>Венецианской маской</strong> — ниточка к пропавшему отцу и закрытому клубу.</li>
-          </ul>
-        </div>
-
-        <div class="ending-actions">
-          <button id="btnReplaySandbox" type="button" class="btn-secondary">Вернуться в квартиру Маши</button>
-          <button id="btnRestartFull" type="button" class="btn-ghost">Пройти Пролог заново</button>
-        </div>
-      </div>
-    </section>
   </div>
 
-  <!-- ==================== МОДАЛКИ (Native <dialog>) ==================== -->
+  <!-- ==================== 1. МОДАЛКА ИМЕНИ ГЕРОЯ ==================== -->
+  <dialog id="nameDialog" class="vn-dialog dialog-compact" closedby="any" aria-labelledby="nameDialogTitle">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-kicker">ПРОЛОГ • НАЧАЛО ИСТОРИИ</p>
+          <h2 id="nameDialogTitle" class="dialog-title">Имя главного героя</h2>
+        </div>
+        <button class="dialog-close-btn" type="button" data-close-dialog="nameDialog" aria-label="Закрыть окно">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-  <!-- 1. Ввод имени ГГ (как в Amnesia) -->
-  <dialog id="nameDialog" aria-labelledby="nameDialogTitle">
-    <form method="dialog" class="modal-box">
-      <h2 id="nameDialogTitle">Как тебя зовут?</h2>
-      <p class="modal-desc">Ты только что вышел за ворота интерната №7 с одним рюкзаком и старыми отцовскими часами в кармане.</p>
-      <label class="field-label" for="playerNameInput">Имя главного героя</label>
-      <input id="playerNameInput" name="playerName" type="text" maxlength="18" value="Артём" autocomplete="given-name" autofocus>
-      <div class="modal-note">
-        ℹ️ Все персонажи совершеннолетние (18+). Герои сводные и не связаны кровным родством.
-      </div>
-      <div class="modal-actions">
-        <button type="submit" value="cancel" class="btn-ghost">Отмена</button>
-        <button type="submit" value="start" class="btn-primary">Поехать к Маше</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- 2. Досье, Статы и Дорожная карта Звёзд -->
-  <dialog id="dossierDialog" closedby="any" aria-labelledby="dossierTitle">
-    <div class="modal-box">
-      <div class="modal-top">
-        <h2 id="dossierTitle">Отношения и Цели</h2>
-        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть окно">✕</button></form>
-      </div>
-      <div id="dossierContent" class="dossier-content"></div>
+      <form id="nameForm" class="name-form">
+        <p class="dialog-lead">
+          Каноническое имя героя — <strong>Артём Соколов</strong>. Вы можете оставить его или вписать своё.
+        </p>
+        <label class="field-label" for="playerNameInput">Имя героя</label>
+        <input
+          id="playerNameInput"
+          class="field-input"
+          type="text"
+          name="playerName"
+          maxlength="20"
+          autocomplete="given-name"
+          value="Артём"
+          placeholder="Артём"
+          required
+        />
+        <div class="dialog-actions">
+          <button class="btn-luxury btn-primary" type="submit">Войти в историю</button>
+        </div>
+      </form>
     </div>
   </dialog>
 
-  <!-- 3. Рюкзак / Инвентарь -->
-  <dialog id="bagDialog" closedby="any" aria-labelledby="bagTitle">
-    <div class="modal-box">
-      <div class="modal-top">
-        <h2 id="bagTitle">🎒 Твой рюкзак</h2>
-        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть рюкзак">✕</button></form>
+  <!-- ==================== 2. ОНБОРДИНГ ШКАЛ (BEING A DIK STYLE) ==================== -->
+  <dialog
+    id="scalesTutorialDialog"
+    class="vn-dialog dialog-compact"
+    closedby="any"
+    aria-labelledby="scalesTutorialTitle"
+  >
+    <div class="dialog-card tutorial-card">
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-kicker">МЕХАНИКА ВЫБОРА</p>
+          <h2 id="scalesTutorialTitle" class="dialog-title">Живой характер без подсказок</h2>
+        </div>
+        <button
+          class="dialog-close-btn"
+          type="button"
+          data-close-dialog="scalesTutorialDialog"
+          aria-label="Закрыть подсказку"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div id="bagList" class="bag-list"></div>
+
+      <ul class="tutorial-points">
+        <li>
+          <span class="tutorial-bullet" aria-hidden="true">
+            <svg class="icon-svg-sm" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6" /></svg>
+          </span>
+          <div>
+            <strong>Маятник «Ваниль — Альфа»</strong>
+            <p>Бережная чуткость и уверенная мужская инициатива формируют тон ваших диалогов и сцен.</p>
+          </div>
+        </li>
+        <li>
+          <span class="tutorial-bullet" aria-hidden="true">
+            <svg class="icon-svg-sm" viewBox="0 0 24 24">
+              <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.9L12 3z" />
+            </svg>
+          </span>
+          <div>
+            <strong>Доверие и Риск</strong>
+            <p>На кнопках нет спойлеров. Уважение личных границ укрепляет Доверие Маши, а смелые импульсы повышают Риск.</p>
+          </div>
+        </li>
+        <li>
+          <span class="tutorial-bullet" aria-hidden="true">
+            <svg class="icon-svg-sm" viewBox="0 0 24 24">
+              <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+              <path d="M10 5.5h4" />
+            </svg>
+          </span>
+          <div>
+            <strong>Всё внутри смартфона</strong>
+            <p>Текущие шкалы, звёзды близости, сообщения и зацепки по делу отца всегда доступны по иконке смартфона сверху.</p>
+          </div>
+        </li>
+      </ul>
+
+      <div class="dialog-actions">
+        <button
+          id="btnCloseTutorial"
+          class="btn-luxury btn-primary"
+          type="button"
+          data-close-dialog="scalesTutorialDialog"
+        >
+          Понятно, продолжаем
+        </button>
+      </div>
     </div>
   </dialog>
 
-  <!-- 4. История диалогов -->
-  <dialog id="logDialog" closedby="any" aria-labelledby="logTitle">
-    <div class="modal-box">
-      <div class="modal-top">
-        <h2 id="logTitle">💬 История реплик</h2>
-        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть историю">✕</button></form>
+  <!-- ==================== 3. СМАРТФОН АРТЁМА (ANDROID HUB) ==================== -->
+  <dialog id="mcPhoneDialog" class="vn-dialog dialog-phone" closedby="any" aria-labelledby="mcPhoneTitle">
+    <div class="phone-device phone-mc">
+      <div class="phone-statusbar">
+        <span id="mcPhoneClock" class="phone-clock">08:45</span>
+        <span id="mcPhoneTitle" class="phone-device-label">СМАРТФОН АРТЁМА</span>
+        <button
+          class="phone-close-btn"
+          type="button"
+          data-close-dialog="mcPhoneDialog"
+          aria-label="Убрать смартфон"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div id="logList" class="log-list"></div>
+
+      <div class="phone-tabs" role="tablist" aria-label="Разделы смартфона">
+        <button
+          class="phone-tab active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          data-mc-tab="scales"
+        >
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.9L12 3z" />
+          </svg>
+          <span>Шкалы</span>
+        </button>
+        <button
+          class="phone-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          data-mc-tab="chats"
+        >
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.7 8.7 0 0 1-3.8-.9L3 20.5l1.6-4.7a8.4 8.4 0 1 1 16.4-4.3z" />
+          </svg>
+          <span>Чаты</span>
+        </button>
+        <button
+          class="phone-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          data-mc-tab="clues"
+        >
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-4.2-4.2" />
+          </svg>
+          <span>Улики</span>
+        </button>
+        <button
+          class="phone-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          data-mc-tab="log"
+        >
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 8v4l2.5 2.5" />
+            <circle cx="12" cy="12" r="8.5" />
+          </svg>
+          <span>Отклики</span>
+        </button>
+      </div>
+
+      <div id="mcPhoneBody" class="phone-body"></div>
     </div>
   </dialog>
 
-  <!-- 5. Рабочий Смартфон Маши (Мини-игра взлома PIN + приложения!) -->
-  <dialog id="phoneDialog" closedby="any" aria-labelledby="phoneTitle">
-    <div class="phone-frame">
-      <div class="phone-notch-bar">
-        <span class="phone-time">22:47</span>
-        <span id="phoneTitle" class="phone-model">iPhone Маши (Рабочий)</span>
-        <form method="dialog"><button type="submit" class="phone-close" aria-label="Убрать телефон">✕</button></form>
+  <!-- ==================== 4. ВТОРОЙ IPHONE МАШИ (PIN 1408 + 3 ЧАТА) ==================== -->
+  <dialog
+    id="mashaPhoneDialog"
+    class="vn-dialog dialog-phone"
+    closedby="any"
+    aria-labelledby="mashaPhoneTitle"
+  >
+    <div class="phone-device phone-masha">
+      <div class="phone-statusbar">
+        <span class="phone-clock">22:36</span>
+        <span class="phone-island" aria-hidden="true"></span>
+        <button
+          class="phone-close-btn"
+          type="button"
+          data-close-dialog="mashaPhoneDialog"
+          aria-label="Положить iPhone Маши на тумбочку"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div id="phoneBody" class="phone-body"></div>
+
+      <h2 id="mashaPhoneTitle" class="sr-only">Рабочий iPhone Маши</h2>
+
+      <!-- Экран блокировки PIN -->
+      <div id="mashaLockScreen" class="masha-lock-screen">
+        <div class="masha-lock-top">
+          <svg class="masha-lock-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="10" rx="2.5" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          <p class="masha-lock-time">22:36</p>
+          <p class="masha-lock-sub">Введите код-пароль (4 цифры)</p>
+          <div id="mashaPinDots" class="pin-dots" aria-label="Введено цифр: 0 из 4">
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+          </div>
+          <p id="mashaPinHint" class="masha-pin-hint"></p>
+        </div>
+
+        <div id="mashaPinPad" class="pin-keypad" role="group" aria-label="Цифровая клавиатура">
+          <button class="pin-key" type="button" data-pin-digit="1">1</button>
+          <button class="pin-key" type="button" data-pin-digit="2">2</button>
+          <button class="pin-key" type="button" data-pin-digit="3">3</button>
+          <button class="pin-key" type="button" data-pin-digit="4">4</button>
+          <button class="pin-key" type="button" data-pin-digit="5">5</button>
+          <button class="pin-key" type="button" data-pin-digit="6">6</button>
+          <button class="pin-key" type="button" data-pin-digit="7">7</button>
+          <button class="pin-key" type="button" data-pin-digit="8">8</button>
+          <button class="pin-key" type="button" data-pin-digit="9">9</button>
+          <button class="pin-key pin-key-aux" type="button" data-pin-action="clear" aria-label="Сбросить ввод">
+            Сброс
+          </button>
+          <button class="pin-key" type="button" data-pin-digit="0">0</button>
+          <button class="pin-key pin-key-aux" type="button" data-pin-action="back" aria-label="Удалить цифру">
+            <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 6H8l-6 6 6 6h13a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z" />
+              <path d="M16 10l-4 4M12 10l4 4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Разблокированный мессенджер Маши -->
+      <div id="mashaUnlockedScreen" class="masha-unlocked-screen" hidden>
+        <div class="masha-app-header">
+          <button id="btnMashaChatBack" class="masha-back-btn" type="button" hidden>
+            <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            <span>Диалоги</span>
+          </button>
+          <span id="mashaHeaderTitle" class="masha-app-title">Личные и рабочие чаты</span>
+        </div>
+        <div id="mashaMessengerBody" class="phone-body"></div>
+      </div>
     </div>
   </dialog>
 
-  <!-- 6. Подтверждение сна на диване (как в Amnesia intro_5) -->
-  <dialog id="confirmSleepDialog" closedby="any" aria-labelledby="sleepTitle">
-    <form method="dialog" class="modal-box">
-      <h2 id="sleepTitle">Лечь спать на диване?</h2>
-      <p id="sleepDesc" class="modal-desc"></p>
-      <div class="modal-actions">
-        <button type="submit" value="stay" class="btn-ghost" autofocus>Ещё осмотреться</button>
-        <button type="submit" value="sleep" class="btn-primary">Лечь и ждать Машу</button>
+  <!-- ==================== 5. ДЕТАЛЬНЫЙ ПРОСМОТР УЛИКИ / ПРЕДМЕТА ==================== -->
+  <dialog id="clueDetailDialog" class="vn-dialog dialog-compact" closedby="any" aria-labelledby="clueDetailTitle">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div>
+          <p id="clueDetailTag" class="dialog-kicker">ЗАЦЕПКА</p>
+          <h2 id="clueDetailTitle" class="dialog-title"></h2>
+        </div>
+        <button
+          class="dialog-close-btn"
+          type="button"
+          data-close-dialog="clueDetailDialog"
+          aria-label="Закрыть карточку улики"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-    </form>
+
+      <div id="clueDetailImageWrap" class="clue-detail-img-wrap" hidden>
+        <img
+          id="clueDetailImg"
+          class="clue-detail-img"
+          src=""
+          alt=""
+          width="640"
+          height="640"
+          fetchpriority="low"
+          decoding="async"
+        />
+      </div>
+
+      <p id="clueDetailSummary" class="clue-detail-summary"></p>
+      <p id="clueDetailNote" class="clue-detail-note"></p>
+    </div>
   </dialog>
+
+  <!-- ==================== 6. ПОДТВЕРЖДЕНИЕ НОЧЁВКИ НА ДИВАНЕ ==================== -->
+  <dialog
+    id="confirmSleepDialog"
+    class="vn-dialog dialog-compact"
+    closedby="any"
+    aria-labelledby="confirmSleepTitle"
+  >
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-kicker">ГОСТИНАЯ • 32 ЭТАЖ</p>
+          <h2 id="confirmSleepTitle" class="dialog-title">Погасить свет и лечь на диван?</h2>
+        </div>
+        <button
+          class="dialog-close-btn"
+          type="button"
+          data-close-dialog="confirmSleepDialog"
+          aria-label="Остаться в режиме осмотра"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <p id="confirmSleepSummary" class="dialog-lead"></p>
+
+      <div class="dialog-actions dialog-actions-dual">
+        <button
+          class="btn-luxury btn-secondary"
+          type="button"
+          data-close-dialog="confirmSleepDialog"
+        >
+          Ещё осмотреться
+        </button>
+        <button id="btnConfirmSleepNow" class="btn-luxury btn-primary" type="button">
+          Лечь и ждать Машу
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================== 7. СИСТЕМНОЕ МЕНЮ И ИСТОРИЯ РЕПЛИК ==================== -->
+  <dialog id="systemMenuDialog" class="vn-dialog dialog-phone" closedby="any" aria-labelledby="systemMenuTitle">
+    <div class="dialog-card system-menu-card">
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-kicker">ПАУЗА И ЖУРНАЛ</p>
+          <h2 id="systemMenuTitle" class="dialog-title">Меню сцены</h2>
+        </div>
+        <button
+          class="dialog-close-btn"
+          type="button"
+          data-close-dialog="systemMenuDialog"
+          aria-label="Закрыть меню"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="phone-tabs" role="tablist" aria-label="Разделы меню">
+        <button
+          class="phone-tab active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          data-menu-tab="history"
+        >
+          <span>История реплик</span>
+        </button>
+        <button
+          class="phone-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          data-menu-tab="settings"
+        >
+          <span>Настройки</span>
+        </button>
+      </div>
+
+      <div id="menuHistoryPane" class="menu-pane">
+        <div id="backlogList" class="backlog-list"></div>
+      </div>
+
+      <div id="menuSettingsPane" class="menu-pane" hidden>
+        <div class="settings-group">
+          <div class="setting-row">
+            <div>
+              <strong>Атмосферный звук</strong>
+              <p>Процедурный дождь, город и тактильные отклики</p>
+            </div>
+            <button id="btnMenuSoundToggle" class="btn-chip-toggle" type="button">Выключен</button>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <strong>Подача текста</strong>
+              <p>Плавная печать строк или мгновенный вывод</p>
+            </div>
+            <button id="btnTextSpeedToggle" class="btn-chip-toggle" type="button">Плавная</button>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <strong>Живая анимация сцен</strong>
+              <p>Видео-лупы Kling 2.5, дождь и движение камеры</p>
+            </div>
+            <button id="btnMenuMotionToggle" class="btn-chip-toggle" type="button">Активна</button>
+          </div>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-actions">
+          <button id="btnReturnTitle" class="btn-luxury btn-secondary" type="button">
+            Выйти на титульный экран
+          </button>
+          <button id="btnResetProgressMenu" class="btn-danger-outline" type="button">
+            Сбросить сохранение и начать с нуля
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================== 8. ИТОГИ ПРОЛОГА ==================== -->
+  <dialog id="endingDialog" class="vn-dialog dialog-phone" closedby="any" aria-labelledby="endingDialogTitle">
+    <div class="dialog-card ending-card">
+      <div class="dialog-header">
+        <div>
+          <p class="dialog-kicker">КОНЕЦ ПРОЛОГА • ВПЕРЕДИ ГЛАВА 1</p>
+          <h2 id="endingDialogTitle" class="dialog-title">Точка невозврата</h2>
+        </div>
+        <button
+          class="dialog-close-btn"
+          type="button"
+          data-close-dialog="endingDialog"
+          aria-label="Свернуть окно итогов"
+        >
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="endingSummaryBody" class="ending-summary-body"></div>
+
+      <div class="dialog-actions ending-actions">
+        <button id="btnEndingOpenPhone" class="btn-luxury btn-secondary" type="button">
+          Открыть смартфон героя
+        </button>
+        <button id="btnEndingReplaySandbox" class="btn-luxury btn-secondary" type="button">
+          Осмотреть пентхаус (Intro_4)
+        </button>
+        <button id="btnEndingRestart" class="btn-luxury btn-primary" type="button">
+          Пройти Пролог заново
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================== POPOVER TOAST REGION + LIVE FALLBACK ==================== -->
+  <div id="toastRegion" class="toast-region" role="region" aria-label="Уведомления"></div>
+  <p class="sr-only">Системные отклики выбора</p>
+  <div id="srAnnouncer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
   <script type="module" src="./src/app.js"></script>
 </body>
