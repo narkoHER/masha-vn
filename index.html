@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>МАША — Эпизод 0: Сводный</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="app" class="app-shell" data-mode="title">
+
+    <!-- ==================== ЭКРАН МЕНЮ (TITLE) ==================== -->
+    <section id="titleScreen" class="screen title-screen" tabindex="-1" aria-label="Главное меню">
+      <div class="title-bg-wrap">
+        <img
+          id="titleCoverImg"
+          class="title-cover-img"
+          src="./assets/title_cover.webp"
+          alt="Маша у панорамного окна ночного пентхауса"
+          width="720"
+          height="1280"
+          fetchpriority="high"
+        >
+        <div class="title-gradient"></div>
+      </div>
+
+      <header class="title-top-badge">
+        <span class="pill-tag">ИНТЕРАКТИВНЫЙ СЕРИАЛ • 18+</span>
+        <button id="titleSoundBtn" type="button" class="icon-btn" aria-label="Переключить звук">🔊</button>
+      </header>
+
+      <div class="title-hero-content">
+        <p class="series-kicker">МАРИЯ БОРАТОВНА • ГЛАВА 0</p>
+        <h1 class="game-logo">ЧУЖАЯ КРОВЬ</h1>
+        <p class="game-subtitle">Один звонок из прошлой жизни. Роскошная квартира с чужими секретами. И сводная сестра, которая явно не просто «риэлтор».</p>
+
+        <div class="title-actions">
+          <button id="btnNewGame" type="button" class="btn-primary">Начать историю</button>
+          <button id="btnContinue" type="button" class="btn-secondary" hidden>Продолжить</button>
+          <div class="title-sub-row">
+            <button id="btnTitleDossier" type="button" class="btn-ghost">★ Система звёзд</button>
+            <button id="btnResetSave" type="button" class="btn-ghost">Сброс</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ИГРОВАЯ СЦЕНА (VN + SANDBOX) ==================== -->
+    <main id="gameScreen" class="screen game-screen" tabindex="-1" hidden>
+      <!-- Верхний HUD -->
+      <header class="hud-bar">
+        <button id="btnHome" type="button" class="hud-chip" aria-label="В главное меню">☰</button>
+        <button id="btnDossier" type="button" class="hud-chip hud-stars" aria-label="Открыть статус и звёзды">
+          <span class="star-row" id="hudStars">☆☆☆☆☆</span>
+          <span class="hud-stat-mini" id="hudClues">🔍 0/4</span>
+        </button>
+        <div class="hud-right">
+          <button id="btnBag" type="button" class="hud-chip" aria-label="Открыть рюкзак">
+            🎒 <span id="hudBagCount">1</span>
+          </button>
+          <button id="btnLog" type="button" class="hud-chip" aria-label="История реплик">💬</button>
+          <button id="btnSound" type="button" class="hud-chip" aria-label="Переключить звук">🔊</button>
+        </div>
+      </header>
+
+      <!-- Тосты уведомлений (в стиле Amnesia) -->
+      <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+      <!-- Визуальная сцена 9:16 -->
+      <div id="stageViewport" class="stage-viewport">
+        <img
+          id="stageBg"
+          class="stage-bg"
+          src="./assets/sc1_trolleybus_mc.webp"
+          alt="Текущий кадр сцены"
+          width="720"
+          height="1280"
+          fetchpriority="low"
+        >
+        <div id="stagePlaceholder" class="stage-placeholder" hidden>
+          <span class="placeholder-tag">КАДР В СБОРКЕ</span>
+          <strong id="placeholderName">scene_tag</strong>
+          <p id="placeholderDesc"></p>
+        </div>
+
+        <!-- Слой спрайта персонажа (Маша крупным планом в диалогах) -->
+        <div id="spriteLayer" class="sprite-layer" hidden>
+          <img
+            id="stageSprite"
+            class="stage-sprite"
+            src="./assets/spr_masha_warm_smile.webp"
+            alt="Маша"
+            width="640"
+            height="854"
+            fetchpriority="low"
+          >
+        </div>
+
+        <!-- Оверлей улики (часы отца vs визитка с маской) -->
+        <div id="propCardOverlay" class="prop-card-overlay" hidden>
+          <img
+            id="propCardImg"
+            src="./assets/clue_mask_watch.webp"
+            alt="Крупный план улики"
+            width="640"
+            height="478"
+            fetchpriority="low"
+          >
+        </div>
+
+        <!-- Слой интерактивных хотспотов (в катсценах и песочнице) -->
+        <div id="hotspotLayer" class="hotspot-layer"></div>
+
+        <!-- Подсказка режима осмотра -->
+        <div id="sandboxBanner" class="sandbox-banner" hidden>
+          <span class="pulse-dot"></span>
+          <span id="sandboxRoomTitle">Гостиная Маши — свободный осмотр</span>
+        </div>
+      </div>
+
+      <!-- Нижний блок: Диалог ИЛИ Навигация песочницы -->
+      <div id="vnBottomPanel" class="vn-bottom-panel">
+        <!-- Меню выборов -->
+        <div id="choicePanel" class="choice-panel" hidden></div>
+
+        <!-- Диалоговая карточка (с портретом ГГ когда говорит/думает ГГ) -->
+        <article id="dialogueBox" class="dialogue-box" role="region" aria-label="Диалог">
+          <div class="dialogue-header">
+            <div id="mcAvatarWrap" class="speaker-avatar-wrap" hidden>
+              <div id="mcAvatarSprite" class="mc-avatar-sprite" data-mood="neutral"></div>
+            </div>
+            <div class="dialogue-meta">
+              <span id="speakerName" class="speaker-name">Артём</span>
+              <span id="speakerTag" class="speaker-tag" hidden>мысли</span>
+            </div>
+            <span class="tap-hint" id="tapHint">ТАП ›</span>
+          </div>
+          <p id="dialogueText" class="dialogue-text"></p>
+        </article>
+      </div>
+
+      <!-- Навигация по комнатам квартиры (Режим Песочницы) -->
+      <nav id="roomNav" class="room-nav" aria-label="Комнаты квартиры" hidden>
+        <button type="button" class="room-tab is-active" data-room="living">🛋 Гостиная</button>
+        <button type="button" class="room-tab" data-room="bathroom">🚿 Ванная</button>
+        <button type="button" class="room-tab" data-room="bedroom">🛏 Спальня</button>
+        <button type="button" class="room-tab" data-room="kitchen">🥂 Кухня</button>
+      </nav>
+    </main>
+
+    <!-- ==================== ЭКРАН ИТОГОВ ПРОЛОГА ==================== -->
+    <section id="endingScreen" class="screen ending-screen" tabindex="-1" hidden>
+      <div class="ending-card">
+        <span class="pill-tag">КОНЕЦ ПРОЛОГА • ДЕМО</span>
+        <h2 id="endingHeading">Глава 0 пройдена!</h2>
+        <p id="endingFlavor" class="ending-flavor"></p>
+
+        <div id="endingStatsGrid" class="ending-stats-grid"></div>
+
+        <div class="next-chapter-box">
+          <h3>Что ждёт в Главе 1 «Утро без стука»:</h3>
+          <ul>
+            <li>Утренний визит хищной подруги <strong>Ленки</strong>, решившей лично проверить «скромного братика» пока Маша в душе.</li>
+            <li>Первое повышение до <strong>★1 Звезды</strong> с Машей: ревность, случайное подглядывание и допрос про найденные трусики.</li>
+            <li>Тайна чёрной визитки с <strong>Венецианской маской</strong> — ниточка к пропавшему отцу и закрытому клубу.</li>
+          </ul>
+        </div>
+
+        <div class="ending-actions">
+          <button id="btnReplaySandbox" type="button" class="btn-secondary">Вернуться в квартиру Маши</button>
+          <button id="btnRestartFull" type="button" class="btn-ghost">Пройти Пролог заново</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== МОДАЛКИ (Native <dialog>) ==================== -->
+
+  <!-- 1. Ввод имени ГГ (как в Amnesia) -->
+  <dialog id="nameDialog" aria-labelledby="nameDialogTitle">
+    <form method="dialog" class="modal-box">
+      <h2 id="nameDialogTitle">Как тебя зовут?</h2>
+      <p class="modal-desc">Ты только что вышел за ворота интерната №7 с одним рюкзаком и старыми отцовскими часами в кармане.</p>
+      <label class="field-label" for="playerNameInput">Имя главного героя</label>
+      <input id="playerNameInput" name="playerName" type="text" maxlength="18" value="Артём" autocomplete="given-name" autofocus>
+      <div class="modal-note">
+        ℹ️ Все персонажи совершеннолетние (18+). Герои сводные и не связаны кровным родством.
+      </div>
+      <div class="modal-actions">
+        <button type="submit" value="cancel" class="btn-ghost">Отмена</button>
+        <button type="submit" value="start" class="btn-primary">Поехать к Маше</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 2. Досье, Статы и Дорожная карта Звёзд -->
+  <dialog id="dossierDialog" closedby="any" aria-labelledby="dossierTitle">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h2 id="dossierTitle">Отношения и Цели</h2>
+        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть окно">✕</button></form>
+      </div>
+      <div id="dossierContent" class="dossier-content"></div>
+    </div>
+  </dialog>
+
+  <!-- 3. Рюкзак / Инвентарь -->
+  <dialog id="bagDialog" closedby="any" aria-labelledby="bagTitle">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h2 id="bagTitle">🎒 Твой рюкзак</h2>
+        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть рюкзак">✕</button></form>
+      </div>
+      <div id="bagList" class="bag-list"></div>
+    </div>
+  </dialog>
+
+  <!-- 4. История диалогов -->
+  <dialog id="logDialog" closedby="any" aria-labelledby="logTitle">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h2 id="logTitle">💬 История реплик</h2>
+        <form method="dialog"><button type="submit" class="close-x" aria-label="Закрыть историю">✕</button></form>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </div>
+  </dialog>
+
+  <!-- 5. Рабочий Смартфон Маши (Мини-игра взлома PIN + приложения!) -->
+  <dialog id="phoneDialog" closedby="any" aria-labelledby="phoneTitle">
+    <div class="phone-frame">
+      <div class="phone-notch-bar">
+        <span class="phone-time">22:47</span>
+        <span id="phoneTitle" class="phone-model">iPhone Маши (Рабочий)</span>
+        <form method="dialog"><button type="submit" class="phone-close" aria-label="Убрать телефон">✕</button></form>
+      </div>
+      <div id="phoneBody" class="phone-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 6. Подтверждение сна на диване (как в Amnesia intro_5) -->
+  <dialog id="confirmSleepDialog" closedby="any" aria-labelledby="sleepTitle">
+    <form method="dialog" class="modal-box">
+      <h2 id="sleepTitle">Лечь спать на диване?</h2>
+      <p id="sleepDesc" class="modal-desc"></p>
+      <div class="modal-actions">
+        <button type="submit" value="stay" class="btn-ghost" autofocus>Ещё осмотреться</button>
+        <button type="submit" value="sleep" class="btn-primary">Лечь и ждать Машу</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
