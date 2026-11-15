@@ -142,6 +142,10 @@ class SoundEngine {
     }
   }
 
+  play(name) {
+    this.fx(name);
+  }
+
   fx(name) {
     if (this.muted) return;
     this.init();

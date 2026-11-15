@@ -1,5 +1,5 @@
-import { sound } from "./audio.js";
-import { FxEngine } from "./fx.js";
+import { sound } from "./audio.js?v=2.3";
+import { FxEngine } from "./fx.js?v=2.3";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -8,8 +8,8 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js";
-import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js";
+} from "./sandbox.js?v=2.3";
+import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=2.3";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -934,12 +934,19 @@ function syncStageVideoPlayback() {
     return;
   }
 
+  const posterUrl = currentDisplayedBgUrl || state.lastBg;
+  if (posterUrl) {
+    dom.stageVideo.poster = posterUrl;
+  }
+
   if (currentDisplayedVideoUrl !== activeVideo) {
     dom.stageVideo.classList.remove("is-ready");
     dom.stageVideo.src = activeVideo;
     currentDisplayedVideoUrl = activeVideo;
   }
 
+  dom.stageVideo.muted = true;
+  dom.stageVideo.defaultMuted = true;
   dom.stageVideo.hidden = false;
   const markReady = () => {
     if (!isMotionDisabled() && currentDisplayedVideoUrl === activeVideo) {
@@ -1233,6 +1240,8 @@ function applyStepPresentation(step) {
 
   if (Object.prototype.hasOwnProperty.call(step, "video")) {
     applyStageVideo(step.video);
+  } else if (step.bg) {
+    applyStageVideo(null);
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "sprite")) {

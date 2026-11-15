@@ -87,6 +87,7 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/v2/cg_intro1_doc_watch.webp",
+        video: "./assets/v2/vid_10_doc_watch.mp4",
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         role: "narrator",
@@ -106,6 +107,7 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/v2/cg_intro1_katya_farewell.webp",
+        video: "./assets/v2/vid_09_katya_farewell.mp4",
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         role: "katya",
@@ -146,6 +148,7 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/v2/cg_intro1_katya_farewell.webp",
+        video: "./assets/v2/vid_09_katya_farewell.mp4",
         sprite: null,
         fx: "cloth",
         role: "narrator",
@@ -550,7 +553,7 @@ export function buildPrologueScript() {
       {
         location: "МАЛАЯ БРОННАЯ • 20:30",
         bg: "./assets/v2/cg_intro3_masha_reveal.webp",
-        video: null,
+        video: "./assets/v2/vid_02_masha_reveal.mp4",
         sprite: null,
         cam: "pan-up-reveal",
         fxShader: "rain_exterior",
@@ -679,6 +682,7 @@ export function buildPrologueScript() {
     Intro_3_hug: [
       {
         bg: "./assets/v2/cg_intro3_hug_awkward.webp",
+        video: "./assets/v2/vid_11_hug_awkward.mp4",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -877,6 +881,7 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/v2/cg_intro3_secret_call.webp",
+        video: "./assets/v2/vid_03_secret_call.mp4",
         cam: "zoom-slow",
         sprite: null,
         role: "narrator",
@@ -962,7 +967,7 @@ export function buildPrologueScript() {
       {
         location: "ПРЕСНЯ, 32 ЭТАЖ • 22:05",
         bg: "./assets/v2/cg_intro4_penthouse_arrival.webp",
-        video: null,
+        video: "./assets/v2/vid_12_penthouse_arrival.mp4",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_night",
@@ -1153,7 +1158,7 @@ export function buildPrologueScript() {
     Intro_5_awake: [
       {
         bg: "./assets/v2/cg_intro5_awake_sofa.webp",
-        video: null,
+        video: "./assets/v2/vid_06_awake_sofa.mp4",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
@@ -1320,6 +1325,7 @@ export function buildPrologueScript() {
       {
         location: "ВАННАЯ • 07:32",
         bg: "./assets/v2/cg_intro6_shower_steam.webp",
+        video: "./assets/v2/vid_07_shower_steam.mp4",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         ambience: "shower",
@@ -1397,6 +1403,7 @@ export function buildPrologueScript() {
       {
         location: "КОРИДОР И ГАРДЕРОБНАЯ • 07:36",
         bg: "./assets/v2/cg_intro6_towel_high_loyalty.webp",
+        video: "./assets/v2/vid_08_towel_high.mp4",
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1541,6 +1548,7 @@ export function buildPrologueScript() {
       {
         location: "ПРИХОЖАЯ • 07:52",
         bg: "./assets/v2/cg_intro6_lenka_intercom.webp",
+        video: "./assets/v2/vid_13_lenka_intercom.mp4",
         cam: "zoom-slow",
         fxShader: "none",
         role: "narrator",
