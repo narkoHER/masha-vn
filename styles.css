@@ -757,7 +757,7 @@ input:focus-visible,
   top: calc(var(--safe-top) + 3.55rem);
   left: 0.75rem;
   right: 0.75rem;
-  z-index: 15;
+  z-index: 18;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -808,9 +808,11 @@ input:focus-visible,
   position: absolute;
   inset: 0;
   z-index: 16;
+  pointer-events: none;
 }
 
 .hotspot-pin {
+  pointer-events: auto;
   position: absolute;
   transform: translate(-50%, -50%);
   display: inline-flex;
@@ -2340,6 +2342,7 @@ input:focus-visible,
 
 /* Вписанные в локацию подсвеченные интерактивные предметы (без громоздких плашек) */
 .hotspot-object-btn {
+  pointer-events: auto;
   position: absolute;
   transform: translate(-50%, -50%);
   display: inline-flex;

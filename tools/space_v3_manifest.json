@@ -5,7 +5,8 @@
     "sprites_and_early": "062bc8ac-bd75-4f1f-9d23-a35d0382c7c5",
     "penthouse_16_rooms": "fcc42061-4acd-44a0-a3f2-65a5204c69d3",
     "night_0142_and_queens": "1db13835-13e1-4945-93a7-328d54ad2ad8",
-    "morning_0732_shower_and_lenka": "710b0956-23fa-4363-b517-1c49a31bb190"
+    "morning_0732_shower_and_lenka": "710b0956-23fa-4363-b517-1c49a31bb190",
+    "script_edits_cross_bus_porsche": "f2e3dc43-7006-4263-870a-c8384f1d1761"
   },
   "imageNodes": {
     "sd_spr_masha_coat_guarded": "3185480f-e98a-40b2-88d8-303093031c8f",
@@ -47,7 +48,20 @@
     "sd_intro6_02_shower_low_angle": "ca0eb077-5e8a-47a8-8353-03331033c3a3",
     "sd_intro6_03_shower_high_angle": "a6f2e0e5-824c-4993-8eb2-b5611505b28e",
     "sd_intro6_04_shower_steamy_mirror": "5896b427-454a-40f8-8b31-1cf595980a38",
-    "cg_intro6_lenka_intercom_v3": "eb210a37-8575-45a9-b10d-73b3e3786183"
+    "cg_intro6_lenka_intercom_v3": "eb210a37-8575-45a9-b10d-73b3e3786183",
+    "sd_intro1_signboard_gates": "e22cd810-f259-4d52-bf70-90c7d5df2ce3",
+    "sd_spr_katya_crossed_arms": "692e00f3-9f9f-447f-8a45-8d10910e78e6",
+    "sd_spr_katya_tear": "f6071110-e782-4e06-bfd9-e97f35429488",
+    "sd_intro1_katya_cross_hands": "e00f4473-0032-450c-94dd-ea0d8649df3c",
+    "sd_intro1_bus_stop_arrival": "5a81d2d9-4c7b-4e36-bb55-90e4afee30ba",
+    "sd_intro1_trolley_doors_open": "f6ffbcc7-d361-4c93-a792-82d59e390598",
+    "sd_intro1_bus_stop_alone": "eea79e8b-9409-4603-9ed5-1748e07eef33",
+    "sd_intro1_mc_emotional_closeup": "bb35fcff-e129-4b44-a40a-ca7b7506adbd",
+    "sd_intro2_macro_raindrops_window": "59332c76-8aba-411a-b6ab-ee21bb36e6c1",
+    "sd_intro4_porsche_ext": "dc859f47-0853-4fcc-9c4a-d856b59972c2",
+    "sd_intro4_porsche_two_shot": "71f03bc7-c052-45d0-8dbf-799e9a60471d",
+    "sd_intro4_porsche_ots_masha": "536870e6-ae10-4c4d-bfa3-ddf540d2075a",
+    "sd_intro4_porsche_ots_mc": "fbe5b7b2-49a5-4ba8-a84b-586d450cd6b7"
   },
   "videoNodes": {
     "vid_v3_01_trolleybus_10s_loop": "38bf00bd-64a2-442b-a595-6f41efba4e83",
@@ -59,6 +73,11 @@
     "vid_v3_08_queens_cards_10s_loop": "4487e8f7-3ead-4a73-94bf-4dd09137b6a3",
     "vid_v3_09_shower_spray_10s_loop": "1585c38c-c872-40ea-be59-2fd68aa9804c",
     "vid_v3_10_steamy_mirror_5s_freeze": "6fd19a5f-31ab-43ea-b48e-6f083bb29b68",
-    "vid_v3_11_lenka_intercom_5s_freeze": "3b396dd6-15eb-44d5-89a4-0fb9b1379e2b"
+    "vid_v3_11_lenka_intercom_5s_freeze": "3b396dd6-15eb-44d5-89a4-0fb9b1379e2b",
+    "vid_v3_12_katya_cross_5s": "fd93e402-a265-4238-80d5-9147bc886c4a",
+    "vid_v3_13_trolley_pull_in_5s": "3ba2c08d-910e-4e3e-8a2c-af128ee24858",
+    "vid_v3_14_trolley_doors_5s": "42de6ca8-602d-4f55-bb68-dc2291317036",
+    "vid_v3_15_macro_raindrops_10s": "3e4fa12b-4137-46bb-8575-4c33fc5e9235",
+    "vid_v3_16_porsche_drive_10s": "2b057111-d670-4427-9202-8bb2a7f8dec8"
   }
 }

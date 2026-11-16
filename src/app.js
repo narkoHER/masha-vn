@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.0";
-import { FxEngine } from "./fx.js?v=3.0";
+import { sound } from "./audio.js?v=3.1";
+import { FxEngine } from "./fx.js?v=3.1";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,8 +9,8 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.0";
-import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.0";
+} from "./sandbox.js?v=3.1";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.1";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -127,7 +127,7 @@ function createInitialState(playerName = "Артём") {
     blockId: "Intro_1",
     stepIndex: 0,
     location: "ПРОХОДНАЯ ИНТЕРНАТА • 08:45",
-    lastBg: "./assets/v2/bg_orphanage_gates.webp",
+    lastBg: "./assets/v3/interim_intro1_signboard.webp",
     lastCam: "zoom-slow",
     lastFxShader: "rain_exterior",
     lastAmbience: "rain",
@@ -188,7 +188,7 @@ function createInitialState(playerName = "Артём") {
           {
             dir: "in",
             time: "вчера, 23:14",
-            text: "Соколов, только попробуй завтра уехать в город по-английски! У меня для твоих часов кое-что готово."
+            text: "Соколов, только попробуй завтра уехать в город по-английски! У меня для тебя кое-что есть на память."
           }
         ]
       },
@@ -251,41 +251,67 @@ function clearSavedGame() {
   } catch {}
 }
 
-// ==================== СКЛОНЕНИЯ ИМЕНИ ГЕРОЯ ====================
+// ==================== СКЛОНЕНИЯ И УМЕНЬШИТЕЛЬНЫЕ ИМЕНА ГЕРОЯ ====================
+const CUSTOM_NAME_DIMINUTIVES = {
+  артём: { dim: "Тёма", dimK: "Тёмка", accShort: "Тёму" },
+  артем: { dim: "Тёма", dimK: "Тёмка", accShort: "Тёму" },
+  илья: { dim: "Илья", dimK: "Илюха", accShort: "Илью" },
+  александр: { dim: "Саша", dimK: "Сашка", accShort: "Сашу" },
+  саша: { dim: "Саша", dimK: "Сашка", accShort: "Сашу" },
+  максим: { dim: "Макс", dimK: "Макс", accShort: "Макса" },
+  дмитрий: { dim: "Дима", dimK: "Димка", accShort: "Диму" },
+  дима: { dim: "Дима", dimK: "Димка", accShort: "Диму" },
+  алексей: { dim: "Лёша", dimK: "Лёшка", accShort: "Лёшу" },
+  сергей: { dim: "Серёжа", dimK: "Серёжка", accShort: "Серёжу" },
+  андрей: { dim: "Андрей", dimK: "Андрюха", accShort: "Андрея" },
+  никита: { dim: "Никита", dimK: "Никитка", accShort: "Никиту" },
+  егор: { dim: "Егор", dimK: "Егорка", accShort: "Егора" },
+  иван: { dim: "Ваня", dimK: "Ванька", accShort: "Ваню" },
+  даниил: { dim: "Даня", dimK: "Данька", accShort: "Даню" },
+  данил: { dim: "Даня", dimK: "Данька", accShort: "Даню" },
+  роман: { dim: "Рома", dimK: "Ромка", accShort: "Рому" },
+  кирилл: { dim: "Кирилл", dimK: "Кирюха", accShort: "Кирилла" },
+  павел: { dim: "Паша", dimK: "Пашка", accShort: "Пашу" },
+  михаил: { dim: "Миша", dimK: "Мишка", accShort: "Мишу" },
+  владимир: { dim: "Вова", dimK: "Вовка", accShort: "Вову" },
+  денис: { dim: "Денис", dimK: "Дэн", accShort: "Дениса" },
+  антон: { dim: "Антон", dimK: "Тоха", accShort: "Антона" },
+  евгений: { dim: "Женя", dimK: "Женька", accShort: "Женю" }
+};
+
 function formatText(str) {
   if (!str) return "";
   const name = state.player?.name || "Артём";
-  const isCanonical = name.toLowerCase() === "артём" || name.toLowerCase() === "артем";
+  const lower = name.toLowerCase();
+  const entry = CUSTOM_NAME_DIMINUTIVES[lower];
+  const dim = entry ? entry.dim : name;
+  const dimK = entry ? entry.dimK : name;
+  const accShort = entry ? entry.accShort : name;
+  const introSelf = dimK.toLowerCase() !== lower ? `${name}. ${dimK}` : name;
 
-  const forms = isCanonical
-    ? {
-        mc: "Артём",
-        mc_gen: "Артёма",
-        mc_dat: "Артёму",
-        mc_acc: "Артёма",
-        mc_ins: "Артёмом",
-        mc_dim: "Тёма",
-        mc_dim_k: "Тёмка",
-        mc_acc_short: "Тёму"
-      }
-    : {
-        mc: name,
-        mc_gen: name,
-        mc_dat: name,
-        mc_acc: name,
-        mc_ins: name,
-        mc_dim: name,
-        mc_dim_k: name,
-        mc_acc_short: name
-      };
+  const forms = {
+    mc: name,
+    mc_gen: name,
+    mc_dat: name,
+    mc_acc: name,
+    mc_ins: name,
+    mc_dim: dim,
+    mc_dim_k: dimK,
+    mc_acc_short: accShort,
+    mc_intro_self: introSelf
+  };
 
   return str.replace(/\{(mc(?:_[a-z_]+)?)\}/g, (_, key) => forms[key] || name);
 }
 
-// ==================== УМНАЯ ПОДГРУЗКА V2 АССЕТОВ С FALLBACK ====================
+// ==================== УМНАЯ ПОДГРУЗКА V2/V3 АССЕТОВ С FALLBACK БЕЗ 404 ====================
 function probeImage(url) {
   return new Promise((resolve) => {
     if (!url) {
+      resolve(false);
+      return;
+    }
+    if (url.startsWith("./assets/v3/") && !AVAILABLE_V3_ASSETS.has(url)) {
       resolve(false);
       return;
     }
@@ -1137,8 +1163,8 @@ function stopTyping(completeImmediately = false) {
 }
 
 function renderDialogueLine(step) {
-  const role = step.role || "narrator";
-  const speakerText = step.speaker ? formatText(step.speaker) : "";
+  const role = step.role || "mct";
+  const speakerText = step.speaker ? formatText(step.speaker) : formatText("{mc}");
   const bodyText = formatText(step.text || "");
 
   lastSpokenContext = speakerText ? `${speakerText}: «${bodyText}»` : bodyText;
@@ -1146,7 +1172,7 @@ function renderDialogueLine(step) {
   dom.dialogueBox.dataset.role = role;
   dom.speakerName.textContent = speakerText;
   dom.speakerRoleTag.hidden = role !== "mct";
-  dom.speakerRow.hidden = !speakerText && role === "narrator";
+  dom.speakerRow.hidden = false;
 
   applyPortraitAvatar(role, step.portraitMood);
 
@@ -1154,7 +1180,7 @@ function renderDialogueLine(step) {
   const lastEntry = state.backlog[state.backlog.length - 1];
   if (bodyText && (!lastEntry || lastEntry.text !== bodyText)) {
     state.backlog.push({
-      speaker: speakerText || (role === "mct" ? `${formatText("{mc}")} (мысли)` : "Повествование"),
+      speaker: role === "mct" ? `${speakerText} (мысли)` : speakerText,
       text: bodyText
     });
     if (state.backlog.length > 45) state.backlog.shift();
