@@ -2290,4 +2290,304 @@ input:focus-visible,
   .vn-toast[popover] {
     transition-duration: 0.1s;
   }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ==================== V3 UPGRADES: ВРЕМЯ СУТОК, ПОДСВЕТКА ПРЕДМЕТОВ, 4 КОРОЛЕВЫ ==================== */
+.stage-viewport {
+  cursor: pointer;
+}
+
+.sandbox-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: auto;
+}
+
+.sandbox-time-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.14rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.time-pill-btn {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.56;
+  transition: opacity 0.18s ease, background-color 0.18s ease;
+}
+
+.time-pill-btn.active {
+  opacity: 1;
+  background: rgba(214, 178, 114, 0.24);
+  box-shadow: 0 0 10px rgba(214, 178, 114, 0.35);
+}
+
+/* Вписанные в локацию подсвеченные интерактивные предметы (без громоздких плашек) */
+.hotspot-object-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0.2rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.24s ease, opacity 0.28s ease;
+}
+
+.hotspot-object-btn:hover {
+  transform: translate(-50%, -50%) scale(1.07);
+}
+
+.hotspot-object-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hotspot-object-cutout {
+  width: clamp(64px, 20cqi, 94px);
+  height: auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 11px rgba(238, 198, 122, 0.72));
+  animation: objectGlowPulse 2.6s ease-in-out infinite;
+}
+
+.hotspot-object-beacon {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(214, 178, 114, 0.32), rgba(10, 12, 18, 0.78));
+  border: 1.5px solid rgba(238, 198, 122, 0.82);
+  color: var(--gold-bright);
+  box-shadow: 0 0 18px rgba(214, 178, 114, 0.48), 0 8px 20px rgba(0, 0, 0, 0.65);
+  animation: objectGlowPulse 2.6s ease-in-out infinite;
+}
+
+.hotspot-object-btn.is-exit .hotspot-object-beacon {
+  border-color: rgba(154, 194, 255, 0.82);
+  color: #cfe0ff;
+  box-shadow: 0 0 18px rgba(138, 180, 248, 0.42), 0 8px 20px rgba(0, 0, 0, 0.65);
+}
+
+.hotspot-object-tag {
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(248, 243, 232, 0.95);
+  background: rgba(8, 10, 16, 0.72);
+  border: 1px solid rgba(214, 178, 114, 0.36);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.hotspot-object-btn.is-inspected .hotspot-object-cutout,
+.hotspot-object-btn.is-inspected .hotspot-object-beacon {
+  filter: grayscale(0.35) brightness(0.78);
+  animation: none;
+  opacity: 0.62;
+}
+
+.hotspot-object-btn.is-inspected .hotspot-object-tag {
+  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.14);
+  opacity: 0.72;
+}
+
+@keyframes objectGlowPulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Интерактивная мини-игра «Расклад на 4 Королев» */
+.queens-spread-overlay {
+  position: absolute;
+  top: calc(var(--safe-top) + 3.4rem);
+  left: 0.65rem;
+  right: 0.65rem;
+  z-index: 18;
+  padding: 0.75rem 0.8rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(10, 12, 20, 0.88), rgba(14, 16, 28, 0.92));
+  border: 1px solid rgba(214, 178, 114, 0.44);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: default;
+}
+
+.queens-spread-header {
+  text-align: center;
+  margin-bottom: 0.65rem;
+}
+
+.queens-spread-kicker {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+
+.queens-spread-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: #fff;
+  margin: 0.1rem 0;
+}
+
+.queens-spread-hint {
+  font-size: 0.74rem;
+  color: rgba(243, 241, 236, 0.82);
+  line-height: 1.35;
+}
+
+.queens-cards-board {
+  view-transition-scope: all;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+  min-height: 122px;
+  align-items: center;
+  justify-items: center;
+}
+
+.queens-cards-board.mode-cut {
+  grid-template-columns: 1fr;
+}
+
+.queens-cards-board.mode-wager {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.playing-card-btn {
+  view-transition-name: match-element;
+  width: 100%;
+  max-width: 84px;
+  aspect-ratio: 2.5 / 3.6;
+  border-radius: 0.55rem;
+  padding: 0.3rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.playing-card-btn:hover {
+  transform: translateY(-4px);
+}
+
+.playing-card-btn.is-facedown {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(214, 178, 114, 0.22), transparent 62%),
+    repeating-linear-gradient(45deg, #171c2c 0 6px, #101420 6px 12px);
+  border: 1.5px solid rgba(214, 178, 114, 0.68);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.65), inset 0 0 0 3px rgba(214, 178, 114, 0.18);
+  color: var(--gold-bright);
+  align-items: center;
+  justify-content: center;
+}
+
+.playing-card-btn.is-faceup {
+  background: linear-gradient(165deg, #fbf7ee, #efe4ce);
+  border: 1.5px solid #d6b272;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.7);
+}
+
+.playing-card-btn.suit-red {
+  color: #b42334;
+}
+
+.playing-card-btn.suit-dark {
+  color: #171a24;
+}
+
+.playing-card-btn.has-tell {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.65), 0 0 14px rgba(238, 198, 122, 0.42);
+}
+
+.card-corner {
+  font-weight: 800;
+  font-size: 0.74rem;
+  line-height: 1;
+  text-align: left;
+}
+
+.card-corner.bottom {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-queen-emblem {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.card-queen-crown {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.card-queen-label {
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.card-back-crest {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--gold-bright);
+}
+
+.queens-spread-footer {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: center;
+}
+
+.queens-action-btn {
+  width: 100%;
+  min-height: 2.55rem;
+  font-size: 0.8rem;
 }

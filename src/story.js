@@ -40,7 +40,53 @@ export const ASSET_FALLBACKS = {
   "./assets/v2/spr_masha_coat_smile.webp": "./assets/spr_masha_warm_smile.webp",
   "./assets/v2/spr_masha_night_dress.webp": "./assets/spr_masha_warm_smile.webp",
   "./assets/v2/spr_masha_morning_towel.webp": "./assets/spr_masha_teasing.webp",
-  "./assets/v2/spr_katya_rain.webp": null
+  "./assets/v2/spr_katya_rain.webp": null,
+
+  // ==================== V3 SEEDREAM 5.5 + 3D FALLBACK REGISTRY ====================
+  // 16 синхронных комнат пентхауса (4 комнаты × 4 времени суток)
+  "./assets/v3/sd_living_rain_evening.webp": "./assets/v3/room_living_rain_evening.webp",
+  "./assets/v3/sd_living_night_clear.webp": "./assets/v3/room_living_night_clear.webp",
+  "./assets/v3/sd_living_dawn_mist.webp": "./assets/v3/room_living_dawn_mist.webp",
+  "./assets/v3/sd_living_morning_sun.webp": "./assets/v3/room_living_morning_sun.webp",
+  "./assets/v3/sd_kitchen_rain_evening.webp": "./assets/v3/room_kitchen_rain_evening.webp",
+  "./assets/v3/sd_kitchen_night_clear.webp": "./assets/v3/room_kitchen_night_clear.webp",
+  "./assets/v3/sd_kitchen_dawn_mist.webp": "./assets/v3/room_kitchen_dawn_mist.webp",
+  "./assets/v3/sd_kitchen_morning_sun.webp": "./assets/v3/room_kitchen_morning_sun.webp",
+  "./assets/v3/sd_bathroom_rain_evening.webp": "./assets/v3/room_bathroom_rain_evening.webp",
+  "./assets/v3/sd_bathroom_night_clear.webp": "./assets/v3/room_bathroom_night_clear.webp",
+  "./assets/v3/sd_bathroom_dawn_mist.webp": "./assets/v3/room_bathroom_dawn_mist.webp",
+  "./assets/v3/sd_bathroom_morning_sun.webp": "./assets/v3/room_bathroom_morning_sun.webp",
+  "./assets/v3/sd_bedroom_rain_evening.webp": "./assets/v3/room_bedroom_rain_evening.webp",
+  "./assets/v3/sd_bedroom_night_clear.webp": "./assets/v3/room_bedroom_night_clear.webp",
+  "./assets/v3/sd_bedroom_dawn_mist.webp": "./assets/v3/room_bedroom_dawn_mist.webp",
+  "./assets/v3/sd_bedroom_morning_sun.webp": "./assets/v3/room_bedroom_morning_sun.webp",
+
+  // 8 эмоциональных и костюмных спрайтов Маши (Dispatch / Invincible style)
+  "./assets/v3/sd_spr_masha_coat_guarded.webp": "./assets/v2/spr_masha_coat_smile.webp",
+  "./assets/v3/sd_spr_masha_coat_warm.webp": "./assets/v2/spr_masha_coat_smile.webp",
+  "./assets/v3/sd_spr_masha_cafe_warm.webp": "./assets/v2/spr_masha_warm_smile.webp",
+  "./assets/v3/sd_spr_masha_cafe_tease.webp": "./assets/v2/spr_masha_playful_tease.webp",
+  "./assets/v3/sd_spr_masha_cafe_nervous.webp": "./assets/v2/spr_masha_nervous_lie.webp",
+  "./assets/v3/sd_spr_masha_cafe_sad.webp": "./assets/v2/spr_masha_warm_smile.webp",
+  "./assets/v3/sd_spr_masha_night_sapphire.webp": "./assets/v2/spr_masha_night_dress.webp",
+  "./assets/v3/sd_spr_masha_towel_flirt.webp": "./assets/v2/spr_masha_morning_towel.webp",
+
+  // Ключевые исправленные и многоракурсные сюжетные кадры v3
+  "./assets/v3/sd_intro2_trolleybus_temple.webp": "./assets/v2/cg_intro2_trolleybus_mc.webp",
+  "./assets/v3/sd_intro3_masha_reveal_clean.webp": "./assets/v2/cg_intro3_masha_reveal.webp",
+  "./assets/v3/sd_intro3_hug_clean.webp": "./assets/v2/cg_intro3_hug_awkward.webp",
+  "./assets/v3/sd_intro5_01_doorway_wide.webp": "./assets/v2/cg_intro5_night_return.webp",
+  "./assets/v3/sd_intro5_02_low_heels_hem.webp": "./assets/v2/cg_intro5_night_return.webp",
+  "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp": "./assets/v2/cg_intro5_night_return.webp",
+  "./assets/v3/sd_intro5_04_window_silhouette_ots.webp": "./assets/v2/cg_intro5_sleep_silhouette.webp",
+  "./assets/v3/sd_intro5_05_macro_spine_zipper.webp": "./assets/v2/cg_intro5_sleep_silhouette.webp",
+  "./assets/v3/sd_intro5_06_low_silk_stockings.webp": "./assets/v2/cg_intro5_sleep_silhouette.webp",
+  "./assets/v3/sd_intro5_07_glass_reflection.webp": "./assets/v2/cg_intro5_sleep_silhouette.webp",
+  "./assets/v3/sd_intro5_08_cards_table_pov.webp": "./assets/v2/cg_intro5_awake_sofa.webp",
+  "./assets/v3/sd_intro6_01_shower_door_ajar.webp": "./assets/v2/cg_intro6_shower_steam.webp",
+  "./assets/v3/sd_intro6_02_shower_low_angle.webp": "./assets/v2/cg_intro6_shower_steam.webp",
+  "./assets/v3/sd_intro6_03_shower_high_angle.webp": "./assets/v2/cg_intro6_shower_steam.webp",
+  "./assets/v3/sd_intro6_04_shower_steamy_mirror.webp": "./assets/v2/cg_intro6_shower_steam.webp"
 };
 
 export function buildPrologueScript() {
@@ -552,8 +598,8 @@ export function buildPrologueScript() {
     Intro_3: [
       {
         location: "МАЛАЯ БРОННАЯ • 20:30",
-        bg: "./assets/v2/cg_intro3_masha_reveal.webp",
-        video: "./assets/v2/vid_02_masha_reveal.mp4",
+        bg: "./assets/v3/sd_intro3_masha_reveal_clean.webp",
+        video: null,
         sprite: null,
         cam: "pan-up-reveal",
         fxShader: "rain_exterior",
@@ -597,7 +643,7 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/v2/bg_malaya_bronnaya_ext.webp",
-        sprite: "./assets/v2/spr_masha_coat_smile.webp",
+        sprite: "./assets/v3/sd_spr_masha_coat_guarded.webp",
         fxShader: "rain_exterior",
         role: "masha",
         speaker: "Маша",
@@ -681,8 +727,9 @@ export function buildPrologueScript() {
 
     Intro_3_hug: [
       {
-        bg: "./assets/v2/cg_intro3_hug_awkward.webp",
+        bg: "./assets/v3/sd_intro3_hug_clean.webp",
         video: "./assets/v2/vid_11_hug_awkward.mp4",
+        videoMode: "once",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -882,6 +929,7 @@ export function buildPrologueScript() {
       {
         bg: "./assets/v2/cg_intro3_secret_call.webp",
         video: "./assets/v2/vid_03_secret_call.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         sprite: null,
         role: "narrator",
@@ -968,6 +1016,7 @@ export function buildPrologueScript() {
         location: "ПРЕСНЯ, 32 ЭТАЖ • 22:05",
         bg: "./assets/v2/cg_intro4_penthouse_arrival.webp",
         video: "./assets/v2/vid_12_penthouse_arrival.mp4",
+        videoMode: "once",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_night",
@@ -1053,12 +1102,12 @@ export function buildPrologueScript() {
     ],
 
     // =========================================================================
-    // INTRO_5: 01:42 НОЧИ — ВОЗВРАЩЕНИЕ МАШИ И РАЗВИЛКА НА ДИВАНЕ
+    // INTRO_5: 01:42 НОЧИ — МНОГОРАКУРСНЫЙ ПРИХОД, ПОДГЛЯДЫВАНИЕ ИЛИ РАСКЛАД 4 КОРОЛЕВ
     // =========================================================================
     Intro_5: [
       {
         location: "ПРЕСНЯ • 23:15",
-        bg: "./assets/v2/bg_penthouse_living_night.webp",
+        bg: "./assets/v3/sd_living_rain_evening.webp",
         video: null,
         sprite: null,
         cam: "dim",
@@ -1075,25 +1124,38 @@ export function buildPrologueScript() {
       },
       {
         location: "МОСКВА • 01:42",
-        bg: "./assets/v2/cg_intro5_night_return.webp",
+        bg: "./assets/v3/sd_intro5_01_doorway_wide.webp",
         video: "./assets/v2/vid_04_night_return.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "lock_beep",
         role: "narrator",
-        text: "Электронные часы в глубине студии показывают 01:42. Дождь за окнами стих, и огни башен Москва-Сити расчерчивают пол длинными золотисто-синими полосами. Раздаётся осторожный писк замка — в проёме прихожей бесшумно появляется Маша: босиком, с чёрными лаковыми лодочками в одной руке, в облегающем вечернем платье цвета тёмного сапфира на тонких бретелях."
+        text: "Электронные часы в глубине студии высвечивают 01:42. Дождь за панорамными окнами стих, и башни Москва-Сити расчерчивают паркет длинными золотисто-синими полосами. Тихий писк биометрического замка — и в проёме прихожей бесшумно возникает Маша в вечернем шёлковом платье цвета ночного сапфира."
       },
       {
+        bg: "./assets/v3/sd_intro5_02_low_heels_hem.webp",
+        video: null,
+        cam: "pan-up-reveal",
+        fxShader: "moscow_city_calm",
+        fx: "cloth",
+        role: "narrator",
+        text: "Нижний ракурс от кромки ковра: чтобы не стучать каблуками в тишине, Маша несёт чёрные лаковые лодочки за тонкие ремешки в опущенной руке и ступает босыми пальцами по тёплому дереву. Подол струящегося сапфирового шёлка с высоким разрезом скользит по её щиколоткам при каждом осторожном шаге."
+      },
+      {
+        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        cam: "zoom-slow",
+        fxShader: "moscow_city_calm",
         fx: "heartbeat",
         role: "mct",
         speaker: "{mc}",
         portraitMood: "shy",
-        text: "Вернулась… Почти два часа ночи. От неё долетает тонкая волна ночной прохлады, духов и дорогого игристого вина. Она останавливается в двух шагах от моего дивана, присматриваясь в полумраке к моему лицу, — и у меня есть всего секунда решить, как поступить."
+        text: "Вернулась… От неё долетает тонкая волна ночной прохлады, миндальных духов и сухого шампанского. Она замирает в полушаге от изголовья моего дивана, всматриваясь сверху вниз в моё лицо в контровом свете небоскрёбов — и у меня есть всего секунда решить, остаться «спящим» или подать голос."
       },
       {
         choices: [
           {
-            text: "Притвориться крепко спящим и наблюдать из-под полуопущенных ресниц",
+            text: "Остаться неподвижным и подглядывать сквозь ресницы, что она сделает наедине с собой",
             onPick: (s, api) => {
               s.flags.intro5_branch = "sleep";
               api.changeStats({ risk: 1 }, ["Риск +1"]);
@@ -1101,7 +1163,7 @@ export function buildPrologueScript() {
             goto: "Intro_5_sleep"
           },
           {
-            text: "Негромко подать голос в полумраке: «Тяжёлый выдался показ, Маш?..»",
+            text: "Подать голос в полумраке: «Не спится на новом месте… Тяжёлый вечер, Маш?»",
             onPick: (s, api) => {
               s.flags.intro5_branch = "awake";
               api.changeStats({ loyalty: 1 }, ["Доверие Маши выросло"]);
@@ -1114,43 +1176,79 @@ export function buildPrologueScript() {
 
     Intro_5_sleep: [
       {
+        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        cam: "zoom-slow",
+        fxShader: "moscow_city_calm",
         role: "narrator",
-        text: "{mc} выравнивает дыхание, оставляя узкую щёлочку между ресницами. Маша стоит над диваном несколько долгих секунд; с её лица сходит вся светская бравада, взгляд становится усталым, тёплым и беззащитным."
+        text: "{mc} выравнивает дыхание, оставляя узкую щёлочку между ресницами. Уверенная, что она в комнате совершенно одна, Маша устало выдыхает и кончиками пальцев расстёгивает замочек бархатного чокера."
       },
       {
         role: "masha",
         speaker: "Маша (шёпотом)",
-        text: "Уснул всё-таки, чудо упрямое… Ладно, спи, братец. Хоть один нормальный мужчина в этой квартире, которому от меня ничего не нужно."
+        text: "Спит без задних ног, чудо упрямое… Хоть один мужчина под этой крышей, перед которым не нужно держать спину как на витрине."
       },
       {
-        bg: "./assets/v2/cg_intro5_sleep_silhouette.webp",
+        bg: "./assets/v3/sd_intro5_04_window_silhouette_ots.webp",
         video: "./assets/v2/vid_05_night_silhouette.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "cloth",
         role: "narrator",
-        text: "Думая, что {mc} глубоко спит, Маша роняет туфли на ковёр у кресла, поворачивается вполоборота к панорамному окну Москва-Сити и заводит тонкие пальцы за спину, медленно расстёгивая потайную молнию. В контровом свете небоскрёбов тёмный шёлк платья бесшумно скользит по её плечам и талии к босым ступням, оставляя её в утончённом кружевном комплекте и тонких чулках."
+        text: "Маша ставит лодочки у края кресла, выходит прямо к панорамному стеклу напротив сияющих башен Москва-Сити и медленно убирает тяжёлую волну золотистых волос на одно плечо, открывая изящную линию шеи и спины."
+      },
+      {
+        bg: "./assets/v3/sd_intro5_05_macro_spine_zipper.webp",
+        video: null,
+        cam: "zoom-slow",
+        fxShader: "moscow_city_calm",
+        fx: "cloth",
+        role: "narrator",
+        text: "Крупный план: её тонкие ухоженные пальцы заводятся за спину и неспешно тянут вниз бегунок потайной молнии. Звенья расходятся с тихим шёлковым шелестом миллиметр за миллиметром, обнажая тёплую бархатистую кожу вдоль прогиба позвоночника в сине-золотом неоне ночного города."
       },
       {
         fx: "heartbeat",
         role: "mct",
         speaker: "{mc}",
         portraitMood: "shy",
-        text: "У меня буквально останавливается сердце, а ладони под пледом сжимаются в кулаки. В этом приглушённом свете ночного города она выглядит настолько нереально красивой и хрупкой одновременно, что смотреть на неё тайком кажется почти преступлением — но оторвать взгляд выше человеческих сил."
+        text: "У меня перехватывает горло так, что боюсь сглотнуть и выдать себя. Кровь стучит в ушах — я никогда в жизни не видел ничего настолько завораживающего и запретного буквально на расстоянии вытянутой руки."
       },
       {
+        bg: "./assets/v3/sd_intro5_06_low_silk_stockings.webp",
+        cam: "pan-up-reveal",
+        fxShader: "moscow_city_calm",
         fx: "cloth",
         role: "narrator",
-        text: "Подобрав платье, Маша бесшумно подходит к самому изголовью дивана, наклоняется совсем низко — золотистая прядь её волос едва ощутимо щекочет висок {mc_gen} — и бережно укрывает пледом его открытое плечо."
+        text: "Тонкие бретели соскальзывают с ключиц, и тёмно-синий шёлк бесшумной волной опадает к её босым ступням на мягкий ворс ковра — открывая стройные бёдра в полупрозрачных кружевных чулках и утончённый светлый кружевной комплект."
+      },
+      {
+        bg: "./assets/v3/sd_intro5_07_glass_reflection.webp",
+        cam: "zoom-slow",
+        fxShader: "moscow_city_calm",
+        role: "narrator",
+        text: "В тёмном зеркале панорамного стекла поверх огней высоток отражается её точёный силуэт спереди: Маша потягивается всем телом после долгого вечера на каблуках, касается ладонью прохладного окна и на мгновение прикрывает глаза."
+      },
+      {
+        fx: "heartbeat",
+        role: "mct",
+        speaker: "{mc}",
+        portraitMood: "shy",
+        text: "Пальцы под кашемировым пледом невольно сжимают ткань до побелевших костяшек. Оторвать взгляд от этого отражения на фоне ночной Москвы просто свыше человеческих сил."
+      },
+      {
+        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        fx: "cloth",
+        role: "narrator",
+        text: "Подхватив с ковра сброшенное платье и накинув его на сгиб локтя, Маша бесшумно подходит вплотную к дивану и наклоняется низко над {mc_ins} — прядь её тёплых душистых волос касается его виска, пока она бережно подтыкает сползший край пледа у его плеча."
       },
       {
         role: "masha",
         speaker: "Маша (шёпотом)",
-        text: "Спокойной ночи, {mc_dim_k}… Завтра с утра что-нибудь придумаем."
+        text: "Доброй ночи, {mc_dim_k}… Спи спокойно, завтра со всем разберёмся."
       },
       {
         role: "narrator",
-        text: "Она тихо ускользает в спальню, прикрывая за собой дверь, а {mc} ещё долго смотрит в потолок, слушая гулкие удары собственного сердца."
+        text: "Она мягко ускользает в полумрак спальни, а {mc} ещё долго лежит с колотящимся сердцем, вдыхая оставшийся над подушкой тонкий шлейф миндаля и ночной прохлады."
       },
       { goto: "Intro_5_end" }
     ],
@@ -1159,62 +1257,150 @@ export function buildPrologueScript() {
       {
         bg: "./assets/v2/cg_intro5_awake_sofa.webp",
         video: "./assets/v2/vid_06_awake_sofa.mp4",
+        videoMode: "loop",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         role: "narrator",
-        text: "Маша вздрагивает всем телом, едва не выронив туфли из руки, и прижимает свободную ладонь к ключицам, переводя дух. В свете панорамного окна её щёки трогает лёгкий хмельной румянец."
+        text: "Маша вздрагивает всем телом, едва не выронив лодочки из пальцев, и прижимает свободную ладонь к ключицам, переводя дыхание. В сине-золотом свете панорамы Сити её скулы трогает живой румянец."
       },
       {
         role: "masha",
         speaker: "Маша",
-        text: "Господи, {mc}! У меня чуть душа в пятки не ушла… Ты чего не спишь во втором часу ночи?"
+        text: "Господи, {mc}! У меня чуть сердце не выпрыгнуло… Ты чего не спишь во втором часу ночи?"
       },
       {
         role: "mc",
         speaker: "{mc}",
         portraitMood: "calm",
-        text: "На новом месте всегда сплю вполглаза — старая интернатская привычка. Да и неспокойно как-то было, пока ты там ездила одна в такую темень."
+        text: "В первую ночь на новом месте никогда сразу не засыпаю — интернатская привычка. Да и ждал, пока замок щёлкнет, чтобы знать, что ты нормально добралась."
       },
       {
+        bg: "./assets/v3/sd_living_night_clear.webp",
+        video: null,
+        sprite: "./assets/v3/sd_spr_masha_night_sapphire.webp",
         fx: "cloth",
-        role: "narrator",
-        text: "Маша грустно усмехается, ставит лодочки у края ковра и неожиданно просто опускается прямо на край дивана рядом с бедром {mc_gen}, поджав под себя босые ноги. От близкого расстояния между ними в полутьме повисает густое, трепетное напряжение."
-      },
-      {
         role: "masha",
         speaker: "Маша",
-        text: "Отвыкла я, чтобы кто-то дома ждал и спрашивал, доехала я или нет… Извини, если дыхнула шампанским — пришлось весь вечер держать улыбку перед очень тяжёлыми людьми. Голова звенит как колокол."
+        text: "Ждал он меня… Знаешь, у меня в груди так отвыкли от этой фразы, что даже щиплет. Мне самой после этих шумных кабинетов хоть волком вой — голова гудит, сна ни в одном глазу."
+      },
+      {
+        sprite: "./assets/v3/sd_spr_masha_cafe_tease.webp",
+        role: "narrator",
+        text: "В глазах Маши вдруг вспыхивает озорная, почти девчоночья искра. Она ставит туфли у кресла, тянется к нижнему ящику консоли и достаёт тяжёлую бархатную коробочку с колодой карт с золочёным обрезом."
+      },
+      {
+        sprite: "./assets/v3/sd_spr_masha_night_sapphire.webp",
+        role: "masha",
+        speaker: "Маша",
+        text: "Слушай, Соколов, раз уж нам обоим не спится — давай тряхнём стариной! Помнишь, как я в десять лет гадала тебе под одеялом с фонариком на «будущую невесту»? Двигай ноги, сейчас раскину тебе настоящий взрослый расклад на любовь — на Четырёх Королев!"
+      },
+      {
+        role: "mc",
+        speaker: "{mc}",
+        portraitMood: "shy",
+        text: "Какой ещё расклад на любовь, Маш?! Я три часа как из интерната вышел, какие вокруг меня королевы…"
+      },
+      {
+        bg: "./assets/v3/sd_intro5_08_cards_table_pov.webp",
+        sprite: null,
+        cam: "zoom-slow",
+        fx: "cloth",
+        role: "masha",
+        speaker: "Маша",
+        text: "Москва — город быстрый, братец, тут дамы появляются раньше, чем успеешь оглянуться! Садись ближе: сдвинь колоду левой рукой к сердцу, открой всех четырёх Королев по очереди, а под конец сыграем с тобой на один честный ответ."
+      },
+      {
+        startQueensCardGame: true
+      }
+    ],
+
+    Intro_5_cards_win: [
+      {
+        bg: "./assets/v2/cg_intro5_awake_sofa.webp",
+        video: "./assets/v2/vid_06_awake_sofa.mp4",
+        videoMode: "loop",
+        sprite: null,
+        fx: "heartbeat",
+        effect: (s, api) => {
+          s.flags.won_queens_wager = true;
+          api.addClue("clue_midnight_card_confession");
+          api.changeStats({ loyalty: 1 }, ["Доверие Маши +1 (выигран карточный спор)"]);
+        },
+        role: "masha",
+        speaker: "Маша",
+        text: "Да ладно?! Угадал с первой попытки — ты что, по моим ресницам считываешь, куда я Бубновую Даму положила?! Ну, карточный долг — дело святое…"
       },
       {
         role: "mc",
         speaker: "{mc}",
         portraitMood: "calm",
-        text: "Ты дрожишь совсем, Маш. У тебя пальцы ледяные."
+        text: "Тогда один вопрос без сказок про ипотеку, Маш. Кто такой этот Артур и зачем ты ездишь к ним по ночам?"
+      },
+      {
+        role: "narrator",
+        text: "Улыбка медленно сходит с губ Маши. Она перебирает край золочёной карты в тонких пальцах и смотрит на огни башни Империя за окном."
       },
       {
         role: "masha",
         speaker: "Маша",
-        text: "Это от кондиционеров в машине, сейчас пройдёт… Странно так: утром я проснулась совершенно одна в пустом бетонном аквариуме, а ночью сижу рядом с тобой — и впервые за три года мне не хочется включать телевизор для фона, чтобы не сойти с ума от тишины."
+        text: "Глазастый ты вырос, {mc_dim}… Никакой я не брокер по квартирам. Три года назад я пыталась через частных безопасников поднять закрытые архивы по исчезновению твоего отца и влезла в огромный долг перед агентством Артура. Теперь отрабатываю контрактом сопровождения на закрытых деловых приёмах — без грязи, но на коротком поводке. Мне осталось закрыть всего два выезда."
       },
+      {
+        role: "mct",
+        speaker: "{mc}",
+        portraitMood: "calm",
+        text: "У меня внутри всё переворачивается. Она влезла в эту золотую клетку три года назад из-за попытки найти следы моего отца… И молча тянула эту лямку одна!"
+      },
+      { goto: "Intro_5_sofa_choice" }
+    ],
+
+    Intro_5_cards_miss: [
+      {
+        bg: "./assets/v2/cg_intro5_awake_sofa.webp",
+        video: "./assets/v2/vid_06_awake_sofa.mp4",
+        videoMode: "loop",
+        sprite: null,
+        effect: (s, api) => {
+          s.flags.won_queens_wager = false;
+          api.changeStats({ risk: 1 }, ["Азарт ночи: Риск +1"]);
+        },
+        role: "masha",
+        speaker: "Маша",
+        text: "Мимо, шулер! Вот она где пряталась, моя Бубновая Королева — прямо у края пледа!"
+      },
+      {
+        fx: "tap",
+        role: "narrator",
+        text: "Маша со смехом щёлкает {mc_acc} уголком глянцевой карты по кончику носа, но тут же затихает, кутаясь от ночной прохлады и глядя на него с неожиданной взрослой нежностью."
+      },
+      {
+        role: "masha",
+        speaker: "Маша",
+        text: "Так что мои скучные взрослые секреты пока остаются при мне… Честно говоря, утром я проснулась совершенно одна в пустом стеклянном аквариуме, а сейчас сижу с тобой за картами — и впервые за три года мне не страшно выключить в комнате свет."
+      },
+      { goto: "Intro_5_sofa_choice" }
+    ],
+
+    Intro_5_sofa_choice: [
       {
         fx: "heartbeat",
         role: "mct",
         speaker: "{mc}",
         portraitMood: "calm",
-        text: "Она сидит в десяти сантиметрах от меня — плечи обнажены, в глазах блестят отражения огней Сити, и вся её броня «успешной столичной леди» трещит по швам. Сейчас нельзя сфальшивить ни на полтона."
+        text: "Она сидит на краю дивана в десяти сантиметрах от меня — плечи обнажены, карты рассыпаны по кашемировому пледу, в глазах мерцают огни Сити, и вся её светская броня снята. Сейчас всё решит одно движение."
       },
       {
         choices: [
           {
-            text: "Уверенно накрыть её ладонь своей рукой и посмотреть прямо в глаза",
+            text: "Уверенно накрыть её ладонь поверх карт и посмотреть прямо в глаза",
             onPick: (s, api) => {
               api.changeStats({ alpha: 1 }, ["Вектор характера: Альфа"]);
             },
             goto: "Intro_5_alpha"
           },
           {
-            text: "Бережно накинуть край тёплого пледа на её обнажённые плечи",
+            text: "Бережно укрыть её продрогшие плечи тёплым кашемировым пледом",
             onPick: (s, api) => {
               api.changeStats({ vanilla: 1 }, ["Вектор характера: Ваниль"]);
               api.fx("cloth");
@@ -1293,23 +1479,23 @@ export function buildPrologueScript() {
 
     Intro_5_end: [
       {
-        bg: "./assets/v2/bg_penthouse_living_night.webp",
+        bg: "./assets/v3/sd_living_dawn_mist.webp",
         video: null,
         sprite: null,
         fx: "door",
         role: "narrator",
-        text: "Дверь спальни Маши мягко закрывается. Огни небоскрёбов за окном гаснут один за другим, уступая место предрассветной дымке."
+        text: "Дверь спальни Маши мягко закрывается. Огни небоскрёбов за окном гаснут один за другим, уступая место сиренево-розовой предрассветной дымке над Москвой-рекой."
       },
       { goto: "Intro_6" }
     ],
 
     // =========================================================================
-    // INTRO_6: 07:30 УТРА, СИЛУЭТ В ДУШЕ, ПРОВЕРКА LOYALTY >= 2 И ДВОЙНОЙ КЛИФФХЭНГЕР
+    // INTRO_6: 07:30 УТРА, МНОГОРАКУРСНЫЙ ДУШ, LOYALTY >= 2 И ДВОЙНОЙ КЛИФФХЭНГЕР
     // =========================================================================
     Intro_6: [
       {
         location: "МОСКВА • 07:30 УТРА",
-        bg: "./assets/v2/bg_penthouse_living_moscow.webp",
+        bg: "./assets/v3/sd_living_morning_sun.webp",
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1320,36 +1506,48 @@ export function buildPrologueScript() {
         role: "mct",
         speaker: "{mc}",
         portraitMood: "calm",
-        text: "В голове ещё путаются сон и явь — первые три секунды спросонья искал глазами двухъярусные казённые койки, а увидел белый мрамор и голубое небо над башнями Сити. Маша вернулась заполночь, наверняка спит без задних ног до обеда…"
+        text: "В голове ещё путаются сон и явь — первые три секунды спросонья искал глазами двухъярусные казённые койки, а увидел светлый паркет и голубое небо над башнями Сити. Маша легла под утро, наверняка спит до обеда…"
       },
       {
         location: "ВАННАЯ • 07:32",
-        bg: "./assets/v2/cg_intro6_shower_steam.webp",
+        bg: "./assets/v3/sd_intro6_01_shower_door_ajar.webp",
         video: "./assets/v2/vid_07_shower_steam.mp4",
+        videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         ambience: "shower",
         role: "narrator",
-        text: "Не желая шуметь выключателем, {mc} машинально толкает незапертую дверь ванной. Изнутри пахнет горячим паром, цитрусовым гелем и цветочным шампунем — а за полупрозрачным запотевшим стеклом душевой в солнечных бликах вырисовывается обнажённый силуэт Маши вполоборота под тёплыми струями воды."
+        text: "Не желая щёлкать выключателем, {mc} машинально толкает незапертую дверь ванной. Навстречу выплывает густое облако тёплого пара с ароматом цитрусового масла и миндаля — а за влажным стеклом душевой под косыми лучами утреннего солнца вырисовывается точёный силуэт Маши."
       },
       {
+        bg: "./assets/v3/sd_intro6_02_shower_low_angle.webp",
+        video: null,
+        cam: "pan-up-reveal",
+        fxShader: "shower_steam",
+        role: "narrator",
+        text: "Нижний контровой ракурс сквозь клубы пара: под латунной тропической лейкой струи воды вспыхивают жидким золотом, стекая по приподнятым локтям и изгибу талии, пока Маша убирает со лба мокрые тяжёлые пряди."
+      },
+      {
+        bg: "./assets/v3/sd_intro6_03_shower_high_angle.webp",
+        cam: "zoom-slow",
+        fxShader: "shower_steam",
         fx: "heartbeat",
         role: "mct",
         speaker: "{mc}",
         portraitMood: "shy",
-        text: "Воздух мгновенно пересыхает в горле, ноги врастают в тёплую плитку пола. Она забыла повернуть защёлку… И прямо сейчас в двух шагах от меня за тонким влажным стеклом стоит совершенно обнажённая Маша, залитая утренним солнцем!"
+        text: "Дыхание застревает в горле, ступни буквально прирастают к тёплому мрамору у порога. Она забыла повернуть фиксатор замка… Сверху сквозь высокое окно бьёт утреннее солнце, подсвечивая каждую каплю на её обнажённых плечах и ключицах!"
       },
       {
         choices: [
           {
-            text: "Замереть на месте и на несколько секунд задержать заворожённый взгляд",
+            text: "Замереть у порога и заворожённо проследить за её отражением в запотевшем зеркале",
             onPick: (s, api) => {
               api.changeStats({ risk: 1 }, ["Риск +1"]);
             },
             goto: "Intro_6_shower_look"
           },
           {
-            text: "Собрать всю выдержку, отвести глаза и бесшумно шагнуть за порог",
+            text: "Собрать всю выдержку, отвести глаза и бесшумно шагнуть обратно в коридор",
             onPick: (s, api) => {
               api.changeStats({ loyalty: 1 }, ["Доверие Маши выросло"]);
             },
@@ -1361,10 +1559,17 @@ export function buildPrologueScript() {
 
     Intro_6_shower_look: [
       {
+        bg: "./assets/v3/sd_intro6_04_shower_steamy_mirror.webp",
+        cam: "zoom-slow",
+        fxShader: "shower_steam",
+        role: "narrator",
+        text: "В высоком запотевшем зеркале над раковиной на секунду проступает мягкое отражение: Маша прислоняет ладонь к тёплому стеклу кабины, оставляя чёткий отпечаток на конденсате, и выключает воду."
+      },
+      {
         fx: "glass_clink",
         shake: true,
         role: "narrator",
-        text: "Капли конденсата стекают по стеклу душевой, на мгновение делая контур её плеч, ключиц и изгиба бедра вполоборота ещё отчётливее. Маша выключает воду — и {mc} в оцепенении делает неловкое движение назад, задевая локтем стеклянный флакон на краю полки. Раздаётся предательский звон о мрамор!"
+        text: "{mc} в оцепенении делает резкий шаг назад и неловко задевает локтем стеклянный флакон духов на краю мраморной столешницы — раздаётся предательский звон!"
       },
       {
         role: "masha",
@@ -1404,6 +1609,7 @@ export function buildPrologueScript() {
         location: "КОРИДОР И ГАРДЕРОБНАЯ • 07:36",
         bg: "./assets/v2/cg_intro6_towel_high_loyalty.webp",
         video: "./assets/v2/vid_08_towel_high.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1450,8 +1656,8 @@ export function buildPrologueScript() {
         text: "Эм… Честно говоря, Маш, ты даже в одном полотенце выглядишь так, что любая деловая акула забудет, зачем пришла. Но светлый жакет тебе безумно идёт."
       },
       {
-        bg: "./assets/v2/bg_penthouse_bedroom_clean.webp",
-        sprite: "./assets/v2/spr_masha_morning_towel.webp",
+        bg: "./assets/v3/sd_bedroom_morning_sun.webp",
+        sprite: "./assets/v3/sd_spr_masha_towel_flirt.webp",
         role: "masha",
         speaker: "Маша",
         text: "Ого, да ты у нас ещё и комплименты делать умеешь, когда осмелеешь! Засчитано, иди включай кофемашину на кухне — через пять минут выхожу завтракать!"
@@ -1501,7 +1707,7 @@ export function buildPrologueScript() {
     Intro_6_kitchen_finale: [
       {
         location: "КУХНЯ-БАР • 07:48",
-        bg: "./assets/v2/bg_penthouse_kitchen_morning.webp",
+        bg: "./assets/v3/sd_kitchen_morning_sun.webp",
         sprite: null,
         video: null,
         cam: "zoom-slow",
@@ -1549,6 +1755,7 @@ export function buildPrologueScript() {
         location: "ПРИХОЖАЯ • 07:52",
         bg: "./assets/v2/cg_intro6_lenka_intercom.webp",
         video: "./assets/v2/vid_13_lenka_intercom.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "none",
         role: "narrator",

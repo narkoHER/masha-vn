@@ -88,8 +88,66 @@ export const CLUES_CATALOG = {
     image: "./assets/v2/cg_intro1_doc_watch.webp",
     summary: "За 3 дня до интерната часы чинили в частном ателье на Арбате, а этой весной неизвестный мужчина через курьера выяснял точную дату выпуска Артёма!",
     detail: "Катя нашла в дальнем сейфе канцелярии первичную опись приёма Артёма 12-летней давности. Часовая мастерская находится в 20 минутах ходьбы от Пресни — и кто-то живой следил за выходом Артёма на свободу."
+  },
+  clue_midnight_card_confession: {
+    id: "clue_midnight_card_confession",
+    title: "Ночной расклад: контракт с Артуром",
+    tag: "01:48 • Откровение на картах",
+    summary: "Выиграв спор на Бубновой Даме, Артём услышал от Маши правду: она не риэлтор, а отрабатывает старый кабальный долг перед закрытым агентством Артура в Сити.",
+    detail: "Маша призналась, что влезла в обязательства перед Артуром три года назад, когда пыталась выкупить архивы и выйти на след пропавшего Виктора. Осталось закрыть последние два выезда."
   }
 };
+
+export const QUEENS_SPREAD_CARDS = [
+  {
+    id: "queen_hearts",
+    suit: "♥",
+    suitColor: "red",
+    rank: "Q",
+    title: "Дама Червей",
+    archetype: "Чистое сердце из прошлого",
+    heroineHint: "Линия Кати",
+    mashaMood: "spr_masha_warm_smile",
+    mashaLine:
+      "Ого, первой под твоей рукой открылась Червовая Дама… Тёплая, преданная душа, которая осталась ждать тебя за закрытыми воротами. Ну-ка колись, Соколов: оставил в интернате тихую девчонку, которая по тебе вздыхает?"
+  },
+  {
+    id: "queen_diamonds",
+    suit: "♦",
+    suitColor: "red",
+    rank: "Q",
+    title: "Дама Бубен",
+    archetype: "Золотая витрина и чужая тайна",
+    heroineHint: "Линия Маши",
+    mashaMood: "spr_masha_nervous_lie",
+    mashaLine:
+      "Бубновая Королева легла прямо в изголовье… Светская блондинка в шелках, у которой за красивым фасадом семь замков и вечная бессонница. Хм, даже не представляю, на кого это твоя колода так бесцеремонно намекает…"
+  },
+  {
+    id: "queen_spades",
+    suit: "♠",
+    suitColor: "dark",
+    rank: "Q",
+    title: "Дама Пик",
+    archetype: "Искушение без тормозов",
+    heroineHint: "Линия Ленки",
+    mashaMood: "spr_masha_playful_tease",
+    mashaLine:
+      "Так, а вот от Пиковой Дамы держись на пистолетном выстреле, братец! Кареглазая бестия без стыда и тормозов — такая ворвётся с утра на каблуках и за пять минут проверит все твои слабые места."
+  },
+  {
+    id: "queen_clubs",
+    suit: "♣",
+    suitColor: "dark",
+    rank: "Q",
+    title: "Дама Треф",
+    archetype: "Ледяной расчёт и старый долг",
+    heroineHint: "Тень Вероники",
+    mashaMood: "spr_masha_warm_smile",
+    mashaLine:
+      "И Трефовая Дама отвернулась к прошлому… Холодная гордая женщина, старая семейная трещина и чужие деньги, из-за которых всё пошло наперекосяк двенадцать лет назад."
+  }
+];
 
 export const MASHA_WORK_PHONE_CHATS = {
   lenka: {
@@ -151,63 +209,76 @@ export const MASHA_WORK_PHONE_CHATS = {
 export const SANDBOX_ROOMS = {
   living: {
     id: "living",
-    shortLabel: "Гостиная",
+    emoji: "🛋",
+    shortLabel: "🛋 Гостиная",
     title: "Гостиная — панорама Москва-Сити",
     locationBadge: "ГОСТИНАЯ • 22:24",
-    bg: "./assets/v2/bg_penthouse_living_moscow.webp",
+    bg: "./assets/v3/sd_living_rain_evening.webp",
+    bgByTime: {
+      rain_evening: "./assets/v3/sd_living_rain_evening.webp",
+      night_clear: "./assets/v3/sd_living_night_clear.webp",
+      dawn_mist: "./assets/v3/sd_living_dawn_mist.webp",
+      morning_sun: "./assets/v3/sd_living_morning_sun.webp"
+    },
     fxShader: "moscow_city_night",
-    visualProps: [
-      {
-        propKey: "living_table_clue",
-        x: 64,
-        y: 73,
-        kind: "card",
-        imgSrc: "./assets/v2/cutout_wine_card.webp",
-        caption: "Бокалы Бордо и картхолдер"
-      }
-    ],
+    fxByTime: {
+      rain_evening: "moscow_city_night",
+      night_clear: "moscow_city_calm",
+      dawn_mist: "none",
+      morning_sun: "morning_sun"
+    },
+    visualProps: [],
     hotspots: [
       {
         id: "living_wine_card",
         propKey: "living_table_clue",
         icon: "search",
-        label: "Столик с вином и салфеткой",
+        imgSrc: "./assets/v2/cutout_wine_card.webp",
+        shortTag: "Бокалы и пропуск",
+        label: "Осмотреть столик с Бордо и салфеткой",
         x: 64,
-        y: 73
+        y: 72
       },
       {
         id: "guest_sofa",
         icon: "moon",
+        shortTag: "Диван",
         label: "Погасить бра и лечь на диван",
-        x: 27,
-        y: 64,
+        x: 26,
+        y: 63,
         isExit: true
       }
     ]
   },
   kitchen: {
     id: "kitchen",
-    shortLabel: "Кухня-бар",
+    emoji: "🍷",
+    shortLabel: "🍷 Кухня",
     title: "Кухня-бар — камень и латунь",
     locationBadge: "КУХНЯ-БАР • 22:28",
-    bg: "./assets/v2/bg_penthouse_kitchen_moscow.webp",
+    bg: "./assets/v3/sd_kitchen_rain_evening.webp",
+    bgByTime: {
+      rain_evening: "./assets/v3/sd_kitchen_rain_evening.webp",
+      night_clear: "./assets/v3/sd_kitchen_night_clear.webp",
+      dawn_mist: "./assets/v3/sd_kitchen_dawn_mist.webp",
+      morning_sun: "./assets/v3/sd_kitchen_morning_sun.webp"
+    },
     fxShader: "moscow_city_night",
-    visualProps: [
-      {
-        propKey: "kitchen_calla_clue",
-        x: 54,
-        y: 56,
-        kind: "note",
-        imgSrc: "./assets/v2/cutout_calla_note.webp",
-        caption: "Белые каллы с открыткой"
-      }
-    ],
+    fxByTime: {
+      rain_evening: "moscow_city_night",
+      night_clear: "moscow_city_calm",
+      dawn_mist: "none",
+      morning_sun: "morning_sun"
+    },
+    visualProps: [],
     hotspots: [
       {
         id: "kitchen_calla",
         propKey: "kitchen_calla_clue",
         icon: "sparkle",
-        label: "Холодильник и букет на острове",
+        imgSrc: "./assets/v2/cutout_calla_note.webp",
+        shortTag: "Букет калл",
+        label: "Осмотреть букет и открытку на острове",
         x: 54,
         y: 56
       }
@@ -215,72 +286,78 @@ export const SANDBOX_ROOMS = {
   },
   bathroom: {
     id: "bathroom",
-    shortLabel: "Ванная",
-    title: "Ванная комната — мрамор и парфюм",
+    emoji: "🚿",
+    shortLabel: "🚿 Ванная",
+    title: "Ванная комната — ночной свет и мрамор",
     locationBadge: "ВАННАЯ • 22:32",
-    bg: "./assets/v2/bg_penthouse_bathroom_clean.webp",
-    fxShader: "none",
-    visualProps: [
-      {
-        propKey: "bathroom_lace_dilemma",
-        x: 78,
-        y: 48,
-        kind: "lace",
-        imgSrc: "./assets/v2/cutout_silk_lace.webp",
-        caption: "Шёлк и кружево на змеевике"
-      }
-    ],
+    bg: "./assets/v3/sd_bathroom_rain_evening.webp",
+    bgByTime: {
+      rain_evening: "./assets/v3/sd_bathroom_rain_evening.webp",
+      night_clear: "./assets/v3/sd_bathroom_night_clear.webp",
+      dawn_mist: "./assets/v3/sd_bathroom_dawn_mist.webp",
+      morning_sun: "./assets/v3/sd_bathroom_morning_sun.webp"
+    },
+    fxShader: "moscow_city_night",
+    fxByTime: {
+      rain_evening: "moscow_city_night",
+      night_clear: "moscow_city_calm",
+      dawn_mist: "none",
+      morning_sun: "shower_steam"
+    },
+    visualProps: [],
     hotspots: [
       {
         id: "bathroom_rail",
         propKey: "bathroom_lace_dilemma",
         icon: "eye",
-        label: "Зеркало и полотенцесушитель",
-        x: 78,
-        y: 48
+        imgSrc: "./assets/v2/cutout_silk_lace.webp",
+        shortTag: "Шёлк у зеркала",
+        label: "Полотенцесушитель и флаконы духов",
+        x: 76,
+        y: 50
       }
     ]
   },
   bedroom: {
     id: "bedroom",
-    shortLabel: "Спальня",
-    title: "Спальня Маши — приглушённый свет",
+    emoji: "🛏",
+    shortLabel: "🛏 Спальня",
+    title: "Спальня Маши — приглушённый бра",
     locationBadge: "СПАЛЬНЯ МАШИ • 22:36",
-    bg: "./assets/v2/bg_penthouse_bedroom_clean.webp",
+    bg: "./assets/v3/sd_bedroom_rain_evening.webp",
+    bgByTime: {
+      rain_evening: "./assets/v3/sd_bedroom_rain_evening.webp",
+      night_clear: "./assets/v3/sd_bedroom_night_clear.webp",
+      dawn_mist: "./assets/v3/sd_bedroom_dawn_mist.webp",
+      morning_sun: "./assets/v3/sd_bedroom_morning_sun.webp"
+    },
     fxShader: "moscow_city_night",
-    visualProps: [
-      {
-        propKey: "bedroom_swing_photo",
-        x: 79,
-        y: 66,
-        kind: "frame",
-        imgSrc: "./assets/v2/cutout_swing_frame.webp",
-        caption: "Серебряная рамка у ночника"
-      },
-      {
-        propKey: "bedroom_masha_phone",
-        x: 63,
-        y: 79,
-        kind: "phone",
-        caption: "Второй iPhone на кабеле"
-      }
-    ],
+    fxByTime: {
+      rain_evening: "moscow_city_night",
+      night_clear: "moscow_city_calm",
+      dawn_mist: "none",
+      morning_sun: "morning_sun"
+    },
+    visualProps: [],
     hotspots: [
       {
         id: "bedroom_photo",
         propKey: "bedroom_swing_photo",
         icon: "search",
-        label: "Серебряная рамка у ночника",
-        x: 79,
-        y: 66
+        imgSrc: "./assets/v2/cutout_swing_frame.webp",
+        shortTag: "Рамка 14.08",
+        label: "Серебряная фоторамка у изголовья",
+        x: 78,
+        y: 64
       },
       {
         id: "bedroom_phone",
         propKey: "bedroom_masha_phone",
         icon: "phone",
-        label: "Второй iPhone Маши",
-        x: 63,
-        y: 79
+        shortTag: "iPhone Маши",
+        label: "Рабочий iPhone на зарядке",
+        x: 60,
+        y: 78
       }
     ]
   }

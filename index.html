@@ -13,7 +13,7 @@
     rel="stylesheet"
   />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./styles.css?v=2.3" />
+  <link rel="stylesheet" href="./styles.css?v=3.0" />
 </head>
 <body>
   <div id="appRoot" class="app-shell">
@@ -274,17 +274,40 @@
           </div>
         </aside>
 
-        <!-- Ненавязчивый статус песочницы Intro_4 -->
+        <!-- Ненавязчивый статус песочницы Intro_4 + синхронное время суток -->
         <div id="sandboxBanner" class="sandbox-banner" hidden>
           <div class="sandbox-banner-main">
             <span class="sandbox-banner-kicker">ОСМОТР АПАРТАМЕНТОВ</span>
             <span id="sandboxRoomTitle" class="sandbox-banner-title">Гостиная</span>
           </div>
-          <span id="sandboxGoalCounter" class="sandbox-banner-count">0 / 4</span>
+          <div class="sandbox-banner-right">
+            <div id="sandboxTimeSwitch" class="sandbox-time-switch" role="group" aria-label="Освещение пентхауса">
+              <button type="button" class="time-pill-btn active" data-world-time="rain_evening" title="Вечерний ливень">🌧</button>
+              <button type="button" class="time-pill-btn" data-world-time="night_clear" title="Глубокая ночь 01:42">🌙</button>
+              <button type="button" class="time-pill-btn" data-world-time="dawn_mist" title="Рассвет">🌅</button>
+              <button type="button" class="time-pill-btn" data-world-time="morning_sun" title="Солнечное утро">☀️</button>
+            </div>
+            <span id="sandboxGoalCounter" class="sandbox-banner-count">0 / 4</span>
+          </div>
         </div>
 
-        <!-- Хотспоты песочницы Intro_4 -->
+        <!-- Хотспоты песочницы Intro_4 (вписанные подсвеченные объекты) -->
         <div id="hotspotLayer" class="hotspot-layer" hidden></div>
+
+        <!-- Интерактивный расклад «Четыре Королевы» (Intro_5_awake) -->
+        <section id="queensSpreadOverlay" class="queens-spread-overlay" hidden aria-label="Расклад на Четырёх Королев">
+          <div class="queens-spread-header">
+            <span id="queensSpreadKicker" class="queens-spread-kicker">НОЧНОЕ ГАДАНИЕ • 01:46</span>
+            <h2 id="queensSpreadTitle" class="queens-spread-title">Расклад на Четырёх Королев</h2>
+            <p id="queensSpreadHint" class="queens-spread-hint">Коснитесь колоды левой рукой, чтобы сдвинуть карты к сердцу</p>
+          </div>
+          <div id="queensCardsBoard" class="queens-cards-board"></div>
+          <div class="queens-spread-footer">
+            <button id="btnQueensAction" class="btn-luxury btn-primary queens-action-btn" type="button" hidden>
+              Сыграть с Машей на честный ответ
+            </button>
+          </div>
+        </section>
 
         <!-- Подсказка выхода из режима «Чистый кадр» -->
         <div id="cleanFrameHint" class="clean-frame-hint" hidden>
@@ -771,6 +794,9 @@
         <div class="settings-divider"></div>
 
         <div class="settings-actions">
+          <a class="btn-luxury btn-secondary" href="./penthouse-3d.html" style="text-decoration:none;text-align:center;">
+            📐 Открыть 3D-макет пентхауса
+          </a>
           <button id="btnReturnTitle" class="btn-luxury btn-secondary" type="button">
             Выйти на титульный экран
           </button>
@@ -823,6 +849,6 @@
   <p class="sr-only">Системные отклики выбора</p>
   <div id="srAnnouncer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
-  <script type="module" src="./src/app.js?v=2.3"></script>
+  <script type="module" src="./src/app.js?v=3.0"></script>
 </body>
 </html>

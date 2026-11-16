@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>МАША 3D — Архитектурный макет пентхауса (32 этаж, Пресня)</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080a11;
+      --panel: rgba(12, 15, 24, 0.88);
+      --gold: #d6b272;
+      --line: rgba(214, 178, 114, 0.32);
+      --text: #f3f1ec;
+      --muted: #9ca3b5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      overflow: hidden;
+    }
+    @media (max-width: 800px) {
+      body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    }
+    .sidebar {
+      padding: 1rem;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      z-index: 5;
+    }
+    h1 { font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
+    p.sub { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .group-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); margin-bottom: 0.35rem; }
+    .btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.35rem; }
+    .btn-list { display: flex; flex-direction: column; gap: 0.3rem; }
+    button {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      padding: 0.48rem 0.6rem;
+      border-radius: 0.5rem;
+      font-size: 0.76rem;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    button:hover, button.active {
+      border-color: var(--gold);
+      background: rgba(214, 178, 114, 0.16);
+      color: #fff;
+    }
+    .stage-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 40%, #141928, #06080d);
+    }
+    #viewport916 {
+      aspect-ratio: 9 / 16;
+      height: min(94dvh, 960px);
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .hud-tag {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(8,10,16,0.76);
+      border: 1px solid var(--line);
+      font-size: 0.72rem;
+      pointer-events: none;
+    }
+    a.back-link {
+      color: var(--gold);
+      font-size: 0.78rem;
+      text-decoration: none;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.170.0",
+        "three/addons/": "https://esm.sh/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div>
+      <a class="back-link" href="./index.html">← Вернуться в новеллу</a>
+      <h1 style="margin-top:0.4rem;">3D-МАКЕТ ПЕНТХАУСА МАШИ</h1>
+      <p class="sub">Единая физическая геометрия всех 4 комнат (32 этаж, панорама Москва-Сити на север по оси -Z) + 4 синхронных времени суток и режиссёрские камеры.</p>
+    </div>
+
+    <div>
+      <div class="group-title">Время суток и погода</div>
+      <div class="btn-grid" id="timeButtons">
+        <button type="button" data-time="rain_evening" class="active">🌧 22:05 Ливень</button>
+        <button type="button" data-time="night_clear">🌙 01:42 Ночь</button>
+        <button type="button" data-time="dawn_mist">🌅 05:20 Рассвет</button>
+        <button type="button" data-time="morning_sun">☀️ 07:30 Утро</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="group-title">Комнаты (Песочница Intro_4)</div>
+      <div class="btn-grid" id="roomButtons">
+        <button type="button" data-cam="living" class="active">🛋 Гостиная</button>
+        <button type="button" data-cam="kitchen">🍷 Кухня-бар</button>
+        <button type="button" data-cam="bathroom">🚿 Ванная</button>
+        <button type="button" data-cam="bedroom">🛏 Спальня</button>
+        <button type="button" data-cam="topdown" style="grid-column: span 2;">📐 План сверху (все 4 комнаты)</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="group-title">Ракурсы сцен (01:42 Приход / Карты / 07:32 Душ)</div>
+      <div class="btn-list" id="shotButtons">
+        <button type="button" data-cam="doorway_wide">01:42 • Вход в прихожую (общий)</button>
+        <button type="button" data-cam="low_heels">01:42 • Нижний ракурс (туфли в руке)</button>
+        <button type="button" data-cam="sofa_pov">01:42 • POV с дивана сквозь ресницы</button>
+        <button type="button" data-cam="window_ots">01:42 • Силуэт у панорамы Сити</button>
+        <button type="button" data-cam="macro_spine">01:42 • Макро: молния на спине</button>
+        <button type="button" data-cam="cards_pov">01:45 • Столик: расклад «4 Королевы»</button>
+        <button type="button" data-cam="shower_ajar">07:32 • Приоткрытая дверь ванной</button>
+        <button type="button" data-cam="shower_low">07:32 • Душ: нижний контровой ракурс</button>
+        <button type="button" data-cam="shower_high">07:32 • Душ: верхний ракурс под лейкой</button>
+        <button type="button" data-cam="shower_mirror">07:32 • Запотёвшее зеркало у раковины</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage-wrap">
+    <div id="viewport916">
+      <div class="hud-tag" id="hudTag">🛋 Гостиная • 🌧 22:05 Ливень (вращайте мышью/пальцем)</div>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const container = document.getElementById("viewport916");
+    const hudTag = document.getElementById("hudTag");
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 9 / 16, 0.1, 120);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const ambientLight = new THREE.AmbientLight(0x556080, 1.1);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffdca8, 1.4);
+    dirLight.position.set(-10, 12, -16);
+    scene.add(dirLight);
+
+    const warmLivingLight = new THREE.PointLight(0xffb469, 2.2, 12);
+    warmLivingLight.position.set(-1.2, 2.5, 0.2);
+    scene.add(warmLivingLight);
+
+    const warmKitchenLight = new THREE.PointLight(0xffb469, 2.0, 10);
+    warmKitchenLight.position.set(2.7, 2.3, -0.9);
+    scene.add(warmKitchenLight);
+
+    const warmBathLight = new THREE.PointLight(0xffcfa0, 1.8, 9);
+    warmBathLight.position.set(-6.6, 2.5, 3.8);
+    scene.add(warmBathLight);
+
+    const warmBedLight = new THREE.PointLight(0xffb469, 1.8, 9);
+    warmBedLight.position.set(-7.4, 2.2, -1.2);
+    scene.add(warmBedLight);
+
+    function addBox(x0, y0, z0, x1, y1, z1, color, opts = {}) {
+      const w = x1 - x0, h = y1 - y0, d = z1 - z0;
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        roughness: opts.roughness ?? 0.55,
+        metalness: opts.metalness ?? 0.1,
+        transparent: Boolean(opts.opacity && opts.opacity < 1),
+        opacity: opts.opacity ?? 1,
+        emissive: opts.emissive ?? 0x000000,
+        emissiveIntensity: opts.emissiveIntensity ?? 0.6
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+      scene.add(mesh);
+      return mesh;
+    }
+
+    // Floors
+    addBox(-4.5, -0.15, -4.0, 5.5, 0.0, 3.6, 0x463528, { roughness: 0.4 });
+    addBox(-8.8, -0.15, -4.0, -4.5, 0.0, 2.0, 0x3a2c24, { roughness: 0.45 });
+    addBox(-8.8, -0.15, 2.0, -4.5, 0.0, 5.4, 0xc8c4be, { roughness: 0.25 });
+
+    // North panoramic mullions
+    for (const mx of [-8.75, -6.6, -4.5, -2.5, -0.5, 1.5, 3.5, 5.45]) {
+      addBox(mx - 0.05, 0, -4.02, mx + 0.05, 3.35, -3.92, 0x1c1e24, { metalness: 0.6 });
+    }
+    // Interior walls
+    addBox(-4.56, 0, -4.0, -4.44, 3.35, 0.3, 0x948c84);
+    addBox(-4.56, 0, 1.35, -4.44, 3.35, 3.6, 0x948c84);
+    addBox(-4.5, 0, 3.52, 1.5, 3.35, 3.65, 0x88827c);
+    addBox(0.25, 0, 3.46, 1.25, 2.35, 3.53, 0x2a2422); // Front door
+    addBox(-0.24, 1.22, 3.45, 0.10, 1.75, 3.52, 0x151820, { emissive: 0x3b6ca8 }); // Intercom
+    addBox(-1.25, 0.78, 3.05, -0.72, 0.94, 3.35, 0xbe2430); // TSUM box
+    addBox(-1.55, 0, 2.95, -0.45, 0.78, 3.46, 0x3e3026);
+
+    // Sofa, rug, coffee table, cards
+    addBox(-3.5, 0.0, -2.5, 0.4, 0.03, 1.4, 0x7c7670, { roughness: 0.9 });
+    addBox(-3.2, 0.03, -0.35, -0.15, 0.44, 0.65, 0x44464e, { roughness: 0.8 });
+    addBox(-3.2, 0.44, 0.38, -0.15, 0.86, 0.68, 0x3c3e46, { roughness: 0.8 });
+    addBox(-3.2, 0.03, -1.35, -2.35, 0.44, -0.35, 0x44464e, { roughness: 0.8 });
+    addBox(-2.1, 0.03, -1.75, -0.55, 0.38, -1.05, 0x2c2a30, { roughness: 0.25 });
+    for (let i = 0; i < 4; i++) {
+      const x = -1.62 + i * 0.19;
+      addBox(x, 0.385, -1.48, x + 0.12, 0.395, -1.30, 0xf5efe2, { emissive: 0x554422, emissiveIntensity: 0.35 });
+    }
+
+    // Kitchen island
+    addBox(5.42, 0, -4.0, 5.56, 3.35, 1.8, 0x847e78);
+    addBox(1.5, 0, 1.72, 5.5, 3.35, 1.86, 0x4c3c30);
+    addBox(3.8, 0, -2.2, 5.4, 2.65, 1.68, 0x362c26);
+    addBox(2.15, 0, -2.1, 3.25, 0.92, 0.45, 0x48362a);
+    addBox(2.08, 0.92, -2.16, 3.32, 1.0, 0.52, 0xe2ded6, { roughness: 0.2 });
+    addBox(2.55, 1.0, -1.35, 2.82, 1.42, -1.08, 0xeaf0ec);
+
+    // Bedroom
+    addBox(-8.86, 0, -4.0, -8.72, 3.35, 2.0, 0x8e8680);
+    addBox(-8.8, 0, 1.92, -4.5, 3.35, 2.06, 0x88807a);
+    addBox(-8.7, 0, -2.25, -8.42, 1.32, 0.25, 0x5c504a);
+    addBox(-8.42, 0, -2.05, -6.15, 0.52, 0.05, 0xdad4ce);
+    addBox(-8.65, 0, -2.82, -8.05, 0.54, -2.28, 0x40322a);
+    addBox(-8.42, 0.54, -2.68, -8.24, 0.78, -2.54, 0xd0d4dc); // 1408 frame
+    addBox(-8.25, 0, 1.25, -5.25, 2.75, 1.92, 0x4a3c34);
+
+    // Bathroom + Frosted glass shower + Mirror
+    addBox(-8.86, 0, 2.0, -8.72, 1.25, 5.4, 0xccc8c2);
+    addBox(-8.8, 0, 5.32, -4.5, 3.35, 5.46, 0xd0ccc6);
+    addBox(-4.56, 0, 2.0, -4.44, 3.35, 5.4, 0xc6c2bc);
+    addBox(-6.80, 0, 2.08, -6.72, 2.85, 3.85, 0xbcd0dc, { opacity: 0.42, roughness: 0.35 });
+    addBox(-7.95, 2.72, 2.82, -7.50, 2.78, 3.25, 0xc6a666, { metalness: 0.8, roughness: 0.2 });
+    addBox(-7.55, 0.25, 4.75, -5.25, 0.88, 5.32, 0xdad6d0);
+    addBox(-7.35, 1.05, 5.24, -5.45, 2.65, 5.31, 0xa8c4d8, { metalness: 0.85, roughness: 0.08 });
+
+    // Exterior Moscow-City Towers
+    const towerMeshes = [];
+    const towerDefs = [
+      [-13.5, -10.2, -28, -24.5, 15, 0x2a3e5c, 0x5da8eb],
+      [-9.4, -6.5, -25, -21.8, 18, 0x304a6c, 0xe8a84c],
+      [-5.6, -2.6, -26.5, -23, 21, 0x264262, 0x62b2f5],
+      [-1.9, 0.8, -23.5, -20.5, 17, 0x584026, 0xf2b454],
+      [1.4, 4.4, -27, -23.5, 19.5, 0x2c4668, 0x5ca6ec],
+      [5.0, 8.2, -25.5, -22.2, 16, 0x34445e, 0xe6a64c]
+    ];
+    for (const [x0, x1, z0, z1, th, col, em] of towerDefs) {
+      towerMeshes.push(addBox(x0, -6, z0, x1, th, z1, col, { emissive: em, emissiveIntensity: 0.55 }));
+    }
+
+    const CAM_PRESETS = {
+      living: { pos: [-0.9, 1.52, 2.75], target: [-1.45, 1.18, -3.8], label: "🛋 Гостиная" },
+      kitchen: { pos: [1.15, 1.52, 1.15], target: [3.15, 1.12, -3.5], label: "🍷 Кухня-бар" },
+      bathroom: { pos: [-5.05, 1.50, 4.55], target: [-7.75, 1.35, 2.75], label: "🚿 Ванная" },
+      bedroom: { pos: [-4.95, 1.50, 0.85], target: [-7.65, 1.05, -2.55], label: "🛏 Спальня" },
+      topdown: { pos: [-1.8, 12.5, 1.2], target: [-1.8, 0, 0.4], label: "📐 План сверху" },
+      doorway_wide: { pos: [-0.85, 1.42, -0.55], target: [0.58, 1.12, 3.1], label: "01:42 • Прихожая" },
+      low_heels: { pos: [-0.55, 0.36, 0.85], target: [0.62, 0.52, 2.62], label: "01:42 • Туфли (нижний)" },
+      sofa_pov: { pos: [-1.65, 0.62, 0.12], target: [-1.42, 1.28, -1.85], label: "01:42 • POV с дивана" },
+      window_ots: { pos: [-1.55, 1.18, -0.65], target: [-1.44, 1.24, -3.8], label: "01:42 • Силуэт у Сити" },
+      macro_spine: { pos: [-1.18, 1.38, -1.62], target: [-1.44, 1.26, -2.95], label: "01:42 • Молния на спине" },
+      cards_pov: { pos: [-1.32, 1.48, -2.18], target: [-1.32, 0.55, -0.65], label: "01:45 • 4 Королевы" },
+      shower_ajar: { pos: [-4.72, 1.46, 4.35], target: [-7.65, 1.28, 3.02], label: "07:32 • Дверь ванной" },
+      shower_low: { pos: [-7.12, 0.48, 3.68], target: [-7.75, 1.55, 2.95], label: "07:32 • Душ (снизу)" },
+      shower_high: { pos: [-6.95, 2.55, 3.72], target: [-7.72, 1.05, 2.98], label: "07:32 • Душ (сверху)" },
+      shower_mirror: { pos: [-6.92, 1.48, 3.55], target: [-6.38, 1.38, 5.25], label: "07:32 • Зеркало в пару" }
+    };
+
+    let activeCamKey = "living";
+    let activeTimeKey = "rain_evening";
+
+    function applyTime(tKey) {
+      activeTimeKey = tKey;
+      const cfg = {
+        rain_evening: { bg: 0x12192c, amb: 0.75, sun: 0.25, sunCol: 0x5c76a8, lamp: 2.2, city: 0.7 },
+        night_clear: { bg: 0x070b18, amb: 0.45, sun: 0.35, sunCol: 0x4c78c8, lamp: 1.0, city: 0.95 },
+        dawn_mist: { bg: 0x5e4a66, amb: 1.05, sun: 0.9, sunCol: 0xe29eb4, lamp: 0.45, city: 0.3 },
+        morning_sun: { bg: 0x7cb2e8, amb: 1.45, sun: 2.4, sunCol: 0xffe2a8, lamp: 0.2, city: 0.05 }
+      }[tKey];
+      scene.background = new THREE.Color(cfg.bg);
+      ambientLight.intensity = cfg.amb;
+      dirLight.intensity = cfg.sun;
+      dirLight.color.setHex(cfg.sunCol);
+      warmLivingLight.intensity = cfg.lamp;
+      warmKitchenLight.intensity = cfg.lamp;
+      warmBathLight.intensity = cfg.lamp;
+      warmBedLight.intensity = cfg.lamp;
+      towerMeshes.forEach((m) => { m.material.emissiveIntensity = cfg.city; });
+      updateHud();
+    }
+
+    function applyCamera(cKey) {
+      activeCamKey = cKey;
+      const c = CAM_PRESETS[cKey];
+      camera.position.set(...c.pos);
+      controls.target.set(...c.target);
+      controls.update();
+      updateHud();
+    }
+
+    function updateHud() {
+      const tNames = {
+        rain_evening: "🌧 22:05 Ливень",
+        night_clear: "🌙 01:42 Ночь",
+        dawn_mist: "🌅 05:20 Рассвет",
+        morning_sun: "☀️ 07:30 Утро"
+      };
+      hudTag.textContent = `${CAM_PRESETS[activeCamKey].label} • ${tNames[activeTimeKey]}`;
+    }
+
+    document.querySelectorAll("[data-time]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-time]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        applyTime(b.dataset.time);
+      });
+    });
+
+    document.querySelectorAll("[data-cam]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-cam]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        applyCamera(b.dataset.cam);
+      });
+    });
+
+    function resize() {
+      const r = container.getBoundingClientRect();
+      renderer.setSize(r.width, r.height);
+      camera.aspect = r.width / r.height;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize);
+    resize();
+    applyTime("rain_evening");
+    applyCamera("living");
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

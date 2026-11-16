@@ -1,15 +1,16 @@
-import { sound } from "./audio.js?v=2.3";
-import { FxEngine } from "./fx.js?v=2.3";
+import { sound } from "./audio.js?v=3.0";
+import { FxEngine } from "./fx.js?v=3.0";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
+  QUEENS_SPREAD_CARDS,
   MASHA_WORK_PHONE_CHATS,
   SANDBOX_ROOMS,
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=2.3";
-import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=2.3";
+} from "./sandbox.js?v=3.0";
+import { ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.0";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -132,6 +133,8 @@ function createInitialState(playerName = "Артём") {
     lastAmbience: "rain",
     lastSprite: null,
     lastVideo: null,
+    lastVideoMode: "loop",
+    cardGameActive: false,
     player: {
       name: cleanName,
       alpha: 0,
@@ -160,7 +163,8 @@ function createInitialState(playerName = "Артём") {
       bedroom_masha_phone: { taken: false }
     },
     sandbox: {
-      currentRoom: "living"
+      currentRoom: "living",
+      worldTime: "rain_evening"
     },
     flags: {
       katya_warm_start: false,
@@ -297,12 +301,16 @@ async function resolveAssetUrl(requestedPath) {
   if (!requestedPath) return null;
   if (assetCache.has(requestedPath)) return assetCache.get(requestedPath);
 
-  const candidates = [requestedPath];
-  if (requestedPath.startsWith("./assets/v2/") && requestedPath.endsWith(".webp")) {
-    candidates.push(requestedPath.replace(/\.webp$/, ".png"));
-  }
-  if (ASSET_FALLBACKS[requestedPath]) {
-    candidates.push(ASSET_FALLBACKS[requestedPath]);
+  const candidates = [];
+  let cursor = requestedPath;
+  const seen = new Set();
+  while (cursor && !seen.has(cursor)) {
+    seen.add(cursor);
+    candidates.push(cursor);
+    if ((cursor.startsWith("./assets/v2/") || cursor.startsWith("./assets/v3/")) && cursor.endsWith(".webp")) {
+      candidates.push(cursor.replace(/\.webp$/, ".png"));
+    }
+    cursor = ASSET_FALLBACKS[cursor] || null;
   }
 
   for (const candidate of candidates) {
@@ -388,8 +396,15 @@ const dom = {
 
   sandboxBanner: document.getElementById("sandboxBanner"),
   sandboxRoomTitle: document.getElementById("sandboxRoomTitle"),
+  sandboxTimeSwitch: document.getElementById("sandboxTimeSwitch"),
   sandboxGoalCounter: document.getElementById("sandboxGoalCounter"),
   hotspotLayer: document.getElementById("hotspotLayer"),
+  queensSpreadOverlay: document.getElementById("queensSpreadOverlay"),
+  queensSpreadKicker: document.getElementById("queensSpreadKicker"),
+  queensSpreadTitle: document.getElementById("queensSpreadTitle"),
+  queensSpreadHint: document.getElementById("queensSpreadHint"),
+  queensCardsBoard: document.getElementById("queensCardsBoard"),
+  btnQueensAction: document.getElementById("btnQueensAction"),
   cleanFrameHint: document.getElementById("cleanFrameHint"),
 
   epilogueBar: document.getElementById("epilogueBar"),
@@ -939,12 +954,15 @@ function syncStageVideoPlayback() {
     dom.stageVideo.poster = posterUrl;
   }
 
-  if (currentDisplayedVideoUrl !== activeVideo) {
+  const isNewVideo = currentDisplayedVideoUrl !== activeVideo;
+  if (isNewVideo) {
     dom.stageVideo.classList.remove("is-ready");
     dom.stageVideo.src = activeVideo;
     currentDisplayedVideoUrl = activeVideo;
   }
 
+  const isOnce = state.lastVideoMode === "once";
+  dom.stageVideo.loop = !isOnce;
   dom.stageVideo.muted = true;
   dom.stageVideo.defaultMuted = true;
   dom.stageVideo.hidden = false;
@@ -958,11 +976,15 @@ function syncStageVideoPlayback() {
   } else {
     dom.stageVideo.addEventListener("loadeddata", markReady, { once: true });
   }
-  dom.stageVideo.play?.().catch(() => {});
+  // Для one-shot сцен (объятия, переворот телефона и т.д.) не перезапускаем с нуля, если ролик уже застыл на финальном кадре
+  if (!isOnce || isNewVideo || !dom.stageVideo.ended) {
+    dom.stageVideo.play?.().catch(() => {});
+  }
 }
 
-function applyStageVideo(videoPath) {
+function applyStageVideo(videoPath, videoMode = "loop") {
   state.lastVideo = videoPath || null;
+  state.lastVideoMode = videoMode || "loop";
   syncStageVideoPlayback();
 }
 
@@ -1239,9 +1261,9 @@ function applyStepPresentation(step) {
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "video")) {
-    applyStageVideo(step.video);
+    applyStageVideo(step.video, step.videoMode || "loop");
   } else if (step.bg) {
-    applyStageVideo(null);
+    applyStageVideo(null, "loop");
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "sprite")) {
@@ -1320,11 +1342,18 @@ function runCurrentStoryStep() {
     return;
   }
 
+  if (step.startQueensCardGame) {
+    launchQueensCardGame();
+    return;
+  }
+
   if (step.finishPrologue) {
     completePrologueFinale();
     return;
   }
 
+  state.cardGameActive = false;
+  if (dom.queensSpreadOverlay) dom.queensSpreadOverlay.hidden = true;
   dom.roomNav.hidden = true;
   dom.hotspotLayer.hidden = true;
   dom.sandboxBanner.hidden = true;
@@ -1382,7 +1411,7 @@ function handleAdvanceAction() {
     return;
   }
 
-  if (activeChoices) return;
+  if (activeChoices || state.cardGameActive) return;
 
   if (isTyping) {
     stopTyping(true);
@@ -1457,61 +1486,266 @@ function getHotspotSvg(iconName) {
   }
 }
 
+// ==================== ИНТЕРАКТИВНОЕ ГАДАНИЕ «РАСКЛАД НА 4 КОРОЛЕВ» ====================
+function runScopedBoardTransition(updateFn) {
+  const boardEl = dom.queensCardsBoard;
+  if (
+    boardEl &&
+    !isMotionDisabled() &&
+    typeof Element !== "undefined" &&
+    "startViewTransition" in Element.prototype
+  ) {
+    const vt = boardEl.startViewTransition(() => {
+      updateFn();
+    });
+    vt.ready?.catch?.(() => {});
+    return;
+  }
+  updateFn();
+}
+
+function renderCardFaceContent(btn, card, faceUp) {
+  btn.classList.toggle("is-faceup", faceUp);
+  btn.classList.toggle("is-facedown", !faceUp);
+  btn.classList.toggle("suit-red", faceUp && card.suitColor === "red");
+  btn.classList.toggle("suit-dark", faceUp && card.suitColor !== "red");
+  if (!faceUp) {
+    btn.setAttribute("aria-label", `Закрытая карта расклада`);
+    btn.innerHTML = `<span class="card-back-crest" aria-hidden="true">♛</span>`;
+  } else {
+    btn.setAttribute("aria-label", `${card.title} — ${card.archetype}`);
+    btn.innerHTML = `
+      <span class="card-corner" aria-hidden="true">${card.rank}<br>${card.suit}</span>
+      <span class="card-queen-emblem" aria-hidden="true">
+        <span class="card-queen-crown">${card.suit}</span>
+        <span class="card-queen-label">${card.title.replace("Дама ", "")}</span>
+      </span>
+      <span class="card-corner bottom" aria-hidden="true">${card.rank}<br>${card.suit}</span>
+    `;
+  }
+}
+
+function launchQueensCardGame() {
+  state.cardGameActive = true;
+  dom.vnBottomPanel.hidden = false;
+  dom.choiceWrap.hidden = true;
+  dom.queensSpreadOverlay.hidden = false;
+  dom.btnQueensAction.hidden = true;
+
+  const cardButtons = new Map();
+  const revealedIds = new Set();
+  let phase = "cut"; // "cut" | "spread" | "wager"
+  let wagerResolved = false;
+
+  dom.queensSpreadKicker.textContent = "НОЧНОЕ ГАДАНИЕ • 01:46";
+  dom.queensSpreadTitle.textContent = "Расклад на Четырёх Королев";
+  dom.queensSpreadHint.textContent = "Сдвиньте колоду левой рукой к сердцу";
+  dom.queensCardsBoard.className = "queens-cards-board mode-cut";
+  dom.queensCardsBoard.innerHTML = "";
+
+  const deckBtn = document.createElement("button");
+  deckBtn.type = "button";
+  deckBtn.className = "playing-card-btn is-facedown";
+  deckBtn.setAttribute("aria-label", "Сдвинуть колоду левой рукой к себе");
+  deckBtn.innerHTML = `<span class="card-back-crest" aria-hidden="true">♛</span>`;
+
+  renderDialogueLine({
+    role: "masha",
+    speaker: "Маша",
+    text: "Колода перетасована. Коснись верхней пачки — сними левой рукой к сердцу, и разложим четырёх Королев."
+  });
+
+  deckBtn.addEventListener("click", () => {
+    if (phase !== "cut") return;
+    phase = "spread";
+    sound.play("cloth");
+    haptic("light");
+
+    runScopedBoardTransition(() => {
+      deckBtn.remove();
+      dom.queensCardsBoard.className = "queens-cards-board";
+      dom.queensSpreadHint.textContent = "Откройте все 4 карты по очереди — Маша растолкует каждую Даму";
+
+      QUEENS_SPREAD_CARDS.forEach((card) => {
+        const cBtn = document.createElement("button");
+        cBtn.type = "button";
+        cBtn.className = "playing-card-btn";
+        cBtn.dataset.cardId = card.id;
+        renderCardFaceContent(cBtn, card, false);
+
+        cBtn.addEventListener("click", () => {
+          if (phase === "spread") {
+            if (revealedIds.has(card.id)) return;
+            revealedIds.add(card.id);
+            sound.play("choice");
+            haptic("light");
+            runScopedBoardTransition(() => {
+              renderCardFaceContent(cBtn, card, true);
+            });
+            renderDialogueLine({
+              role: "masha",
+              speaker: "Маша",
+              text: card.mashaLine
+            });
+            if (revealedIds.size === QUEENS_SPREAD_CARDS.length) {
+              dom.queensSpreadHint.textContent = "Все 4 Королевы открыты! Готовы сыграть с Машей на откровенность?";
+              dom.btnQueensAction.hidden = false;
+              dom.btnQueensAction.focus();
+            }
+          } else if (phase === "wager" && !wagerResolved) {
+            wagerResolved = true;
+            const won = card.id === "queen_diamonds";
+            sound.play(won ? "achiev" : "choice");
+            haptic(won ? "success" : "medium");
+
+            runScopedBoardTransition(() => {
+              cardButtons.forEach((b, cid) => {
+                const cObj = QUEENS_SPREAD_CARDS.find((x) => x.id === cid);
+                if (cObj && b.isConnected) {
+                  b.classList.remove("has-tell");
+                  renderCardFaceContent(b, cObj, true);
+                }
+              });
+            });
+
+            dom.queensSpreadHint.textContent = won
+              ? "В яблочко! Бубновая Королева у вас в руках!"
+              : "Промах! Бубновая Дама лежала рядом…";
+
+            setTimeout(() => {
+              state.cardGameActive = false;
+              dom.queensSpreadOverlay.hidden = true;
+              jumpToStoryBlock(won ? "Intro_5_cards_win" : "Intro_5_cards_miss");
+            }, 950);
+          }
+        });
+
+        cardButtons.set(card.id, cBtn);
+        dom.queensCardsBoard.appendChild(cBtn);
+      });
+    });
+  });
+
+  dom.queensCardsBoard.appendChild(deckBtn);
+
+  dom.btnQueensAction.onclick = () => {
+    if (phase !== "spread") return;
+    phase = "wager";
+    dom.btnQueensAction.hidden = true;
+    sound.play("cloth");
+    haptic("medium");
+
+    const wagerPool = ["queen_hearts", "queen_diamonds", "queen_spades"];
+    // Честная перемешка Фишера-Йейтса
+    for (let i = wagerPool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wagerPool[i], wagerPool[j]] = [wagerPool[j], wagerPool[i]];
+    }
+
+    // Сохраняем и переставляем существующие DOM-узлы для корректного match-element перехода
+    runScopedBoardTransition(() => {
+      const clubsBtn = cardButtons.get("queen_clubs");
+      if (clubsBtn && clubsBtn.isConnected) clubsBtn.remove();
+      dom.queensCardsBoard.className = "queens-cards-board mode-wager";
+
+      wagerPool.forEach((cid) => {
+        const b = cardButtons.get(cid);
+        const cObj = QUEENS_SPREAD_CARDS.find((x) => x.id === cid);
+        if (b && cObj) {
+          renderCardFaceContent(b, cObj, false);
+          // Тонкая визуальная подсказка: взгляд Маши чуть выдал карту Бубновой Дамы
+          b.classList.toggle("has-tell", cid === "queen_diamonds");
+          dom.queensCardsBoard.appendChild(b);
+        }
+      });
+    });
+
+    dom.queensSpreadTitle.textContent = "Спор на честный ответ";
+    dom.queensSpreadHint.textContent = "Найдите Бубновую Даму ♦ с одной попытки (присмотритесь, куда скользнул взгляд Маши)";
+    renderDialogueLine({
+      role: "masha",
+      speaker: "Маша",
+      text: "А теперь спор, Соколов! Я перемешала трёх дам рубашкой вверх. Вытянешь мою Бубновую Королеву с одной попытки — честно отвечу на один вопрос про этот вечер!"
+    });
+  };
+}
+
 function renderSandboxRoom(roomId) {
   const room = SANDBOX_ROOMS[roomId] || SANDBOX_ROOMS.living;
   state.sandbox.currentRoom = room.id;
-  state.location = room.locationBadge;
-  dom.hudLocationBadge.textContent = room.locationBadge;
+  if (!state.sandbox.worldTime) {
+    state.sandbox.worldTime = "rain_evening";
+  }
+  const tKey = state.sandbox.worldTime;
+  const timeStampMap = {
+    rain_evening: "22:25",
+    night_clear: "01:42",
+    dawn_mist: "05:20",
+    morning_sun: "07:35"
+  };
+  const baseLocName = room.locationBadge.split("•")[0].trim();
+  const syncedBadge = `${baseLocName} • ${timeStampMap[tKey] || "22:25"}`;
+  state.location = syncedBadge;
+  dom.hudLocationBadge.textContent = syncedBadge;
 
-  applyStageBackground(room.bg, "zoom-slow");
-  state.lastFxShader = room.fxShader || "none";
+  const bgPath = room.bgByTime?.[tKey] || room.bg;
+  const fxMode = room.fxByTime?.[tKey] || room.fxShader || "none";
+  applyStageBackground(bgPath, "zoom-slow");
+  state.lastFxShader = fxMode;
   fxEngine?.setMode(state.lastFxShader);
 
+  if (dom.sandboxTimeSwitch) {
+    dom.sandboxTimeSwitch.querySelectorAll("[data-world-time]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.worldTime === tKey);
+    });
+  }
+
   const goalsDone = countExploredSandboxGoals(state);
-  dom.sandboxRoomTitle.textContent = room.title;
+  dom.sandboxRoomTitle.textContent = `${room.emoji || ""} ${room.title}`.trim();
   dom.sandboxGoalCounter.textContent = `${goalsDone} / 4`;
 
-  // Слой 2: визуально исчезающие предметы комнаты (прозрачные вырезки cutout_*.webp + бейдж)
   dom.roomPropsLayer.innerHTML = "";
-  (room.visualProps || []).forEach((vp) => {
-    const taken = Boolean(state.roomProps?.[vp.propKey]?.taken);
-    const marker = document.createElement("div");
-    marker.className = `room-prop-marker${taken ? " is-taken" : ""}`;
-    marker.dataset.propKey = vp.propKey;
-    marker.style.left = `${vp.x}%`;
-    marker.style.top = `${vp.y}%`;
-    const cutoutHtml = vp.imgSrc
-      ? `<img class="room-prop-cutout" src="${vp.imgSrc}" alt="" width="180" height="180" loading="lazy" decoding="async" />`
-      : "";
-    marker.innerHTML = `${cutoutHtml}<span class="room-prop-pill"><span class="room-prop-glint"></span><span>${vp.caption}</span></span>`;
-    dom.roomPropsLayer.appendChild(marker);
-  });
 
-  // Хотспоты комнаты
+  // Вписанные в интерьер подсвеченные интерактивные предметы (без громоздких плашек)
   dom.hotspotLayer.innerHTML = "";
   (room.hotspots || []).forEach((spot) => {
-    const inspected = spot.propKey ? Boolean(state.roomProps?.[spot.propKey]?.taken) : false;
+    const inspected =
+      spot.propKey === "bedroom_masha_phone"
+        ? Boolean(state.flags?.masha_phone_unlocked)
+        : spot.propKey
+          ? Boolean(state.roomProps?.[spot.propKey]?.taken)
+          : false;
+
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `hotspot-pin${inspected ? " is-inspected" : ""}${spot.isExit ? " is-exit" : ""}`;
+    btn.className = `hotspot-object-btn${inspected ? " is-inspected" : ""}${spot.isExit ? " is-exit" : ""}`;
     btn.style.left = `${spot.x}%`;
     btn.style.top = `${spot.y}%`;
+    btn.setAttribute("aria-label", spot.label);
+
+    const visualInner = spot.imgSrc
+      ? `<img class="hotspot-object-cutout" src="${spot.imgSrc}" alt="" width="88" height="88" loading="lazy" decoding="async" />`
+      : `<span class="hotspot-object-beacon" aria-hidden="true"><svg class="icon-svg-sm" viewBox="0 0 24 24">${getHotspotSvg(spot.icon)}</svg></span>`;
+
     btn.innerHTML = `
-      <span class="hotspot-pin-ring" aria-hidden="true">
-        <svg class="icon-svg-sm" viewBox="0 0 24 24">${getHotspotSvg(spot.icon)}</svg>
-      </span>
-      <span class="hotspot-pin-label">${spot.label}</span>
+      <span class="hotspot-object-visual">${visualInner}</span>
+      <span class="hotspot-object-tag">${spot.shortTag || spot.label}</span>
     `;
-    btn.addEventListener("click", () => handleHotspotClick(spot.id));
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      handleHotspotClick(spot.id);
+    });
     dom.hotspotLayer.appendChild(btn);
   });
 
-  // Вкладки 4 комнат снизу
+  // Смайл + текст вкладки 4 комнат снизу
   dom.roomTabs.innerHTML = "";
   Object.values(SANDBOX_ROOMS).forEach((r) => {
     const tab = document.createElement("button");
     tab.type = "button";
-    tab.className = `room-tab-btn${r.id === room.id ? " active" : ""}`;
+    const isCurrent = r.id === room.id;
+    tab.className = `room-tab-btn${isCurrent ? " active" : ""}`;
+    tab.setAttribute("aria-pressed", isCurrent ? "true" : "false");
     const hasUnseen = !isRoomFullyExplored(r.id);
     tab.innerHTML = `${r.shortLabel}${hasUnseen ? '<span class="room-tab-dot" aria-hidden="true"></span>' : ""}`;
     tab.addEventListener("click", () => {
@@ -2230,11 +2464,34 @@ function bindEvents() {
     openSystemMenu();
   });
 
-  // Выход из режима «Чистый кадр» кликом в любую точку сцены
-  dom.stageViewport.addEventListener("click", () => {
+  // Клик в любое место экрана сцены листает реплику (или выходит из режима «Чистый кадр»)
+  dom.stageViewport.addEventListener("click", (e) => {
     if (dom.appRoot.classList.contains("clean-frame")) {
       setCleanFrame(false);
+      return;
     }
+    if (
+      e.target.closest(
+        "button, a, .queens-spread-overlay, .sandbox-banner-right, .epilogue-bar"
+      )
+    ) {
+      return;
+    }
+    if (state.mode === "story" || dom.gameScreen.classList.contains("is-inspecting-spot")) {
+      handleAdvanceAction();
+    }
+  });
+
+  // Переключатель 4 времён суток в песочнице (синхронизирует освещение всех 4 комнат)
+  dom.sandboxTimeSwitch?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-world-time]");
+    if (!btn) return;
+    e.stopPropagation();
+    state.sandbox.worldTime = btn.dataset.worldTime;
+    sound.play("tap");
+    haptic("light");
+    renderSandboxRoom(state.sandbox.currentRoom);
+    saveGame();
   });
 
   // Продвижение реплик кликом или клавишами Space / Enter
