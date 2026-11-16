@@ -59,7 +59,7 @@ export const CLUES_CATALOG = {
     id: "clue_sky_lounge",
     title: "Бокалы вина и пропуск «SKY LOUNGE»",
     tag: "Гостиная • Улика",
-    image: "./assets/v2/prop_lounge_card_wine.webp",
+    image: "./assets/items/lounge_card_wine.webp",
     summary: "От второго бокала тянет мужским табачным парфюмом. Под салфеткой спрятаны пропуск на 54-й этаж башни Империя и пачка пятитысячных.",
     detail: "Вчера поздно вечером в гостиной Маши был состоятельный мужчина. Закрытый лаунж находится прямо в башне напротив её окон."
   },
@@ -67,7 +67,7 @@ export const CLUES_CATALOG = {
     id: "clue_calla_note",
     title: "Букет белых калл и открытка «К.»",
     tag: "Кухня-бар • Улика",
-    image: "./assets/v2/prop_calla_bouquet.webp",
+    image: "./assets/items/calla_bouquet.webp",
     summary: "На пустой кухне стоит букет белых калл с открыткой: «За безупречную выдержку в среду. В пятницу жду в том же составе, без опозданий. К.»",
     detail: "Дома Маша совсем не готовит: в холодильнике только сухое шампанское, ресторанные роллы и голубика. В пятницу её снова ждёт некто «К.»."
   },
@@ -75,7 +75,7 @@ export const CLUES_CATALOG = {
     id: "clue_swing_photo",
     title: "Снимок на качелях: дата «14.08»",
     tag: "Спальня • Ключ к PIN",
-    image: "./assets/v2/prop_swing_photo_1408.webp",
+    image: "./assets/items/swing_photo_1408.webp",
     summary: "У изголовья кровати Маша все двенадцать лет хранила детское фото с шестилетним Артёмом на дворовых качелях. В углу подписано «14.08».",
     detail: "Карточка снята за неделю до исчезновения отца. Цифры «1408» подходят к паролю на рабочем телефоне Маши."
   },
@@ -90,7 +90,7 @@ export const CLUES_CATALOG = {
     id: "clue_katya_archive",
     title: "Архивный бланк Кати: ателье на Арбате",
     tag: "Катя • Зацепка Главы 1",
-    image: "./assets/v2/cg_intro1_doc_watch.webp",
+    image: "./assets/story/intro_1/doc_watch.webp",
     summary: "За три дня до интерната часы чинили в ателье на Арбате, а этой весной неизвестный мужчина через курьера узнавал дату выпуска Артёма.",
     detail: "Катя нашла в сейфе канцелярии старую опись приёма. Мастерская на Старом Арбате совсем рядом с Пресней, и кто-то заранее ждал выхода Артёма."
   },
@@ -218,12 +218,12 @@ export const SANDBOX_ROOMS = {
     shortLabel: "🛋 Гостиная",
     title: "Гостиная • панорама Москва-Сити",
     locationBadge: "ГОСТИНАЯ • 22:24",
-    bg: "./assets/v3/sd_living_rain_evening.webp",
+    bg: "./assets/locations/penthouse/livingroom/rain_evening.webp",
     bgByTime: {
-      rain_evening: "./assets/v3/sd_living_rain_evening.webp",
-      night_clear: "./assets/v3/sd_living_night_clear.webp",
-      dawn_mist: "./assets/v3/sd_living_dawn_mist.webp",
-      morning_sun: "./assets/v3/sd_living_morning_sun.webp"
+      rain_evening: "./assets/locations/penthouse/livingroom/rain_evening.webp",
+      night_clear: "./assets/locations/penthouse/livingroom/night_clear.webp",
+      dawn_mist: "./assets/locations/penthouse/livingroom/dawn_mist.webp",
+      morning_sun: "./assets/locations/penthouse/livingroom/morning_sun.webp"
     },
     fxShader: "moscow_city_night",
     fxByTime: {
@@ -238,7 +238,7 @@ export const SANDBOX_ROOMS = {
         id: "living_wine_card",
         propKey: "living_table_clue",
         icon: "search",
-        imgSrc: "./assets/v2/cutout_wine_card.webp",
+        imgSrc: "./assets/items/cutout_wine_card.webp",
         shortTag: "Бокалы и пропуск",
         label: "Осмотреть столик с вином и салфеткой",
         x: 64,
@@ -261,12 +261,12 @@ export const SANDBOX_ROOMS = {
     shortLabel: "🍷 Кухня",
     title: "Кухня-бар • камень и латунь",
     locationBadge: "КУХНЯ-БАР • 22:28",
-    bg: "./assets/v3/sd_kitchen_rain_evening.webp",
+    bg: "./assets/locations/penthouse/kitchen/rain_evening.webp",
     bgByTime: {
-      rain_evening: "./assets/v3/sd_kitchen_rain_evening.webp",
-      night_clear: "./assets/v3/sd_kitchen_night_clear.webp",
-      dawn_mist: "./assets/v3/sd_kitchen_dawn_mist.webp",
-      morning_sun: "./assets/v3/sd_kitchen_morning_sun.webp"
+      rain_evening: "./assets/locations/penthouse/kitchen/rain_evening.webp",
+      night_clear: "./assets/locations/penthouse/kitchen/night_clear.webp",
+      dawn_mist: "./assets/locations/penthouse/kitchen/dawn_mist.webp",
+      morning_sun: "./assets/locations/penthouse/kitchen/morning_sun.webp"
     },
     fxShader: "moscow_city_night",
     fxByTime: {
@@ -281,7 +281,7 @@ export const SANDBOX_ROOMS = {
         id: "kitchen_calla",
         propKey: "kitchen_calla_clue",
         icon: "sparkle",
-        imgSrc: "./assets/v2/cutout_calla_note.webp",
+        imgSrc: "./assets/items/cutout_calla_note.webp",
         shortTag: "Букет калл",
         label: "Осмотреть букет и открытку на острове",
         x: 54,
@@ -295,12 +295,12 @@ export const SANDBOX_ROOMS = {
     shortLabel: "🚿 Ванная",
     title: "Ванная комната • мрамор и зеркало",
     locationBadge: "ВАННАЯ • 22:32",
-    bg: "./assets/v3/sd_bathroom_rain_evening.webp",
+    bg: "./assets/locations/penthouse/bathroom/rain_evening.webp",
     bgByTime: {
-      rain_evening: "./assets/v3/sd_bathroom_rain_evening.webp",
-      night_clear: "./assets/v3/sd_bathroom_night_clear.webp",
-      dawn_mist: "./assets/v3/sd_bathroom_dawn_mist.webp",
-      morning_sun: "./assets/v3/sd_bathroom_morning_sun.webp"
+      rain_evening: "./assets/locations/penthouse/bathroom/rain_evening.webp",
+      night_clear: "./assets/locations/penthouse/bathroom/night_clear.webp",
+      dawn_mist: "./assets/locations/penthouse/bathroom/dawn_mist.webp",
+      morning_sun: "./assets/locations/penthouse/bathroom/morning_sun.webp"
     },
     fxShader: "moscow_city_night",
     fxByTime: {
@@ -315,7 +315,7 @@ export const SANDBOX_ROOMS = {
         id: "bathroom_rail",
         propKey: "bathroom_lace_dilemma",
         icon: "eye",
-        imgSrc: "./assets/v2/cutout_silk_lace.webp",
+        imgSrc: "./assets/items/cutout_silk_lace.webp",
         shortTag: "Шёлк у зеркала",
         label: "Полотенцесушитель и флаконы духов",
         x: 76,
@@ -329,12 +329,12 @@ export const SANDBOX_ROOMS = {
     shortLabel: "🛏 Спальня",
     title: "Спальня Маши • ночник у кровати",
     locationBadge: "СПАЛЬНЯ МАШИ • 22:36",
-    bg: "./assets/v3/sd_bedroom_rain_evening.webp",
+    bg: "./assets/locations/penthouse/bedroom/rain_evening.webp",
     bgByTime: {
-      rain_evening: "./assets/v3/sd_bedroom_rain_evening.webp",
-      night_clear: "./assets/v3/sd_bedroom_night_clear.webp",
-      dawn_mist: "./assets/v3/sd_bedroom_dawn_mist.webp",
-      morning_sun: "./assets/v3/sd_bedroom_morning_sun.webp"
+      rain_evening: "./assets/locations/penthouse/bedroom/rain_evening.webp",
+      night_clear: "./assets/locations/penthouse/bedroom/night_clear.webp",
+      dawn_mist: "./assets/locations/penthouse/bedroom/dawn_mist.webp",
+      morning_sun: "./assets/locations/penthouse/bedroom/morning_sun.webp"
     },
     fxShader: "moscow_city_night",
     fxByTime: {
@@ -349,7 +349,7 @@ export const SANDBOX_ROOMS = {
         id: "bedroom_photo",
         propKey: "bedroom_swing_photo",
         icon: "search",
-        imgSrc: "./assets/v2/cutout_swing_frame.webp",
+        imgSrc: "./assets/items/cutout_swing_frame.webp",
         shortTag: "Рамка 14.08",
         label: "Серебряная фоторамка у изголовья",
         x: 78,
@@ -389,7 +389,7 @@ export function getHotspotSequence(spotId, state) {
             role: "mct",
             speaker: "{mc}",
             portraitMood: "calm",
-            prop: "./assets/v2/prop_lounge_card_wine.webp",
+            prop: "./assets/items/lounge_card_wine.webp",
             text: "Карта «SKY LOUNGE • 54 ЭТАЖ» и конверт с купюрами лежат под салфеткой ровно так, как она их оставила. Значит, уехала она именно в ту башню напротив."
           }
         ];
@@ -399,7 +399,7 @@ export function getHotspotSequence(spotId, state) {
           role: "mct",
           speaker: "{mc}",
           portraitMood: "calm",
-          prop: "./assets/v2/prop_lounge_card_wine.webp",
+          prop: "./assets/items/lounge_card_wine.webp",
           fx: "glass_clink",
           text: "На ободке одного бокала остался след Машиного ягодного блеска. Второй с виду чистый, но стоит поднести ближе, и от стекла тянет тяжёлым мужским парфюмом с табаком и кожей. Вчера поздно вечером она здесь была не одна."
         },
@@ -407,7 +407,7 @@ export function getHotspotSequence(spotId, state) {
           role: "mct",
           speaker: "{mc}",
           portraitMood: "calm",
-          prop: "./assets/v2/prop_lounge_card_wine.webp",
+          prop: "./assets/items/lounge_card_wine.webp",
           effect: (s, api) => {
             api.markPropTaken("living_table_clue");
             api.addItem("sky_lounge_card");
@@ -425,7 +425,7 @@ export function getHotspotSequence(spotId, state) {
             role: "mct",
             speaker: "{mc}",
             portraitMood: "calm",
-            prop: "./assets/v2/prop_calla_bouquet.webp",
+            prop: "./assets/items/calla_bouquet.webp",
             text: "Пустая каменная столешница и белые каллы с карточкой от некоего «К.». В пятницу её снова ждут без опозданий."
           }
         ];
@@ -441,7 +441,7 @@ export function getHotspotSequence(spotId, state) {
           role: "mct",
           speaker: "{mc}",
           portraitMood: "calm",
-          prop: "./assets/v2/prop_calla_bouquet.webp",
+          prop: "./assets/items/calla_bouquet.webp",
           fx: "cloth",
           effect: (s, api) => {
             api.markPropTaken("kitchen_calla_clue");
@@ -527,7 +527,7 @@ export function getHotspotSequence(spotId, state) {
             role: "mct",
             speaker: "{mc}",
             portraitMood: "calm",
-            prop: "./assets/v2/prop_swing_photo_1408.webp",
+            prop: "./assets/items/swing_photo_1408.webp",
             text: "Наша старая карточка на дворовых качелях прямо у изголовья. В правом нижнем углу ручкой выведено «14.08»."
           }
         ];
@@ -543,7 +543,7 @@ export function getHotspotSequence(spotId, state) {
           role: "mct",
           speaker: "{mc}",
           portraitMood: "shy",
-          prop: "./assets/v2/prop_swing_photo_1408.webp",
+          prop: "./assets/items/swing_photo_1408.webp",
           effect: (s, api) => {
             s.flags.saw_lake_photo_date = true;
             api.markPropTaken("bedroom_swing_photo");

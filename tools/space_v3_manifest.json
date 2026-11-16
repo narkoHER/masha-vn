@@ -6,7 +6,8 @@
     "penthouse_16_rooms": "fcc42061-4acd-44a0-a3f2-65a5204c69d3",
     "night_0142_and_queens": "1db13835-13e1-4945-93a7-328d54ad2ad8",
     "morning_0732_shower_and_lenka": "710b0956-23fa-4363-b517-1c49a31bb190",
-    "script_edits_cross_bus_porsche": "f2e3dc43-7006-4263-870a-c8384f1d1761"
+    "script_edits_cross_bus_porsche": "f2e3dc43-7006-4263-870a-c8384f1d1761",
+    "wan3_480p_hot_masha_animations": "1ce8ca48-2b7c-4623-b578-32bf3dba1528"
   },
   "imageNodes": {
     "sd_spr_masha_coat_guarded": "3185480f-e98a-40b2-88d8-303093031c8f",
@@ -78,6 +79,12 @@
     "vid_v3_13_trolley_pull_in_5s": "3ba2c08d-910e-4e3e-8a2c-af128ee24858",
     "vid_v3_14_trolley_doors_5s": "42de6ca8-602d-4f55-bb68-dc2291317036",
     "vid_v3_15_macro_raindrops_10s": "3e4fa12b-4137-46bb-8575-4c33fc5e9235",
-    "vid_v3_16_porsche_drive_10s": "2b057111-d670-4427-9202-8bb2a7f8dec8"
+    "vid_v3_16_porsche_drive_10s": "2b057111-d670-4427-9202-8bb2a7f8dec8",
+    "wan_m1_shower_door_480p": "304c2995-7f45-44bc-ad58-043769d769ac",
+    "wan_m2_shower_low_480p": "9cc91283-11a0-4fed-9ebf-b61b01ec61ef",
+    "wan_m3_shower_high_480p": "071a5fab-e6a7-44e0-a291-556aaa75ea0a",
+    "wan_n4_night_silhouette_480p": "d46a34e2-e5c1-4f2c-8818-800224714167",
+    "wan_n8_queens_cards_480p": "32eb9161-33ef-42e5-b6bd-c4b5374c54e2",
+    "wan_e10_porsche_drive_480p": "a1ce21bf-3496-4ffd-bc74-8adf89103964"
   }
 }

@@ -141,7 +141,7 @@ export function buildPrologueScript() {
       {
         // *#Раскадровка: окошко на проходной, фиолетовая печать на справке, табличка и входная группа*
         location: "ПРОХОДНАЯ ИНТЕРНАТА • 08:45",
-        bg: "./assets/v3/sd_intro1_signboard_gates.webp",
+        bg: "./assets/locations/orphanage/signboard_gates.webp",
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         ambience: "rain",
@@ -163,7 +163,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Тяжёлая металлическая дверь проходной закрывается с лязгом магнитного замка*
-        bg: "./assets/v2/bg_orphanage_gates.webp",
+        bg: "./assets/locations/orphanage/gates_rain.webp",
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         fx: "door",
@@ -174,8 +174,8 @@ export function buildPrologueScript() {
       },
       {
         // *#Крупный план запястья ГГ: старые механические часы отца с трещиной на стекле*
-        bg: "./assets/v2/cg_intro1_doc_watch.webp",
-        video: "./assets/v2/vid_10_doc_watch.mp4",
+        bg: "./assets/story/intro_1/doc_watch.webp",
+        video: "./assets/videos/oneshots/doc_watch_5s.mp4",
         videoMode: "once",
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -187,9 +187,8 @@ export function buildPrologueScript() {
       {
         // *#ГГ выходит к остановке; под козырёк влетает запыхавшаяся Катя*
         location: "ОСТАНОВКА У ИНТЕРНАТА • 08:52",
-        bg: "./assets/v2/cg_intro1_katya_farewell.webp",
-        video: "./assets/v2/vid_09_katya_farewell.mp4",
-        videoMode: "once",
+        bg: "./assets/story/intro_1/katya_farewell.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         role: "katya",
@@ -204,9 +203,9 @@ export function buildPrologueScript() {
         text: "Катька? Ты чего тут делаешь? У вас же сейчас первый час информатики?"
       },
       {
-        bg: "./assets/v2/bg_orphanage_gates.webp",
+        bg: "./assets/locations/orphanage/gates_rain.webp",
         video: null,
-        sprite: "./assets/v2/spr_katya_rain.webp",
+        sprite: "./assets/sprites/katya/crossed_arms.webp",
         fxShader: "rain_exterior",
         role: "katya",
         speaker: "Катя",
@@ -221,7 +220,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Катя скрещивает руки, будто обиделась*
-        sprite: "./assets/v3/sd_spr_katya_crossed_arms.webp",
+        sprite: "./assets/sprites/katya/crossed_arms.webp",
         role: "katya",
         speaker: "Катя",
         portraitMood: "katya",
@@ -229,7 +228,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Крупный план ладоней: Катя вкладывает в ладонь старый крестик*
-        bg: "./assets/v3/sd_intro1_katya_cross_hands.webp",
+        bg: "./assets/story/intro_1/katya_cross_hands.webp",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -253,8 +252,8 @@ export function buildPrologueScript() {
       },
       {
         // *#Катя вытирает слезу*
-        bg: "./assets/v2/bg_orphanage_gates.webp",
-        sprite: "./assets/v3/sd_spr_katya_tear.webp",
+        bg: "./assets/locations/orphanage/gates_rain.webp",
+        sprite: "./assets/sprites/katya/tear.webp",
         role: "katya",
         speaker: "Катя",
         portraitMood: "katya",
@@ -276,7 +275,7 @@ export function buildPrologueScript() {
         text: "Ауч! За что?"
       },
       {
-        sprite: "./assets/v3/sd_spr_katya_crossed_arms.webp",
+        sprite: "./assets/sprites/katya/crossed_arms.webp",
         role: "katya",
         speaker: "Катя",
         portraitMood: "katya",
@@ -331,7 +330,7 @@ export function buildPrologueScript() {
     Intro_1_katya_alpha: [
       {
         // *#ГГ резко прижимает Катю к себе*
-        bg: "./assets/v2/cg_intro1_katya_farewell.webp",
+        bg: "./assets/story/intro_1/katya_farewell.webp",
         sprite: null,
         cam: "zoom-slow",
         fx: "cloth",
@@ -352,7 +351,7 @@ export function buildPrologueScript() {
     Intro_1_katya_vanilla: [
       {
         // *#ГГ надевает крестик*
-        bg: "./assets/v3/sd_intro1_katya_cross_hands.webp",
+        bg: "./assets/story/intro_1/katya_cross_hands.webp",
         sprite: null,
         cam: "zoom-slow",
         fx: "cloth",
@@ -362,8 +361,8 @@ export function buildPrologueScript() {
         text: "Спасибо, Кать. Честно, это лучший подарок за все годы в этих стенах. Я без тебя тут вообще бы одичал."
       },
       {
-        bg: "./assets/v2/bg_orphanage_gates.webp",
-        sprite: "./assets/v2/spr_katya_rain.webp",
+        bg: "./assets/locations/orphanage/gates_rain.webp",
+        sprite: "./assets/sprites/katya/crossed_arms.webp",
         role: "katya",
         speaker: "Катя",
         portraitMood: "katya",
@@ -375,8 +374,10 @@ export function buildPrologueScript() {
     Intro_1_after_katya: [
       {
         // *#Из пелены дождя выплывают фары подходящего троллейбуса, Катя пятится к калитке*
-        bg: "./assets/v3/sd_intro1_bus_stop_arrival.webp",
-        sprite: "./assets/v2/spr_katya_rain.webp",
+        bg: "./assets/locations/orphanage/bus_stop_arrival.webp",
+        video: "./assets/videos/oneshots/trolley_pull_in_5s.mp4",
+        videoMode: "once",
+        sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         role: "katya",
@@ -392,7 +393,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Локация остановки: ГГ остаётся один с треснувшим телефоном и смятым листком*
-        bg: "./assets/v3/sd_intro1_bus_stop_alone.webp",
+        bg: "./assets/story/intro_1/bus_stop_alone.webp",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -427,7 +428,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Звенящая пауза, клоуз-ап ГГ на эмоциях, ледяной голос Маши*
-        bg: "./assets/v3/sd_intro1_mc_emotional_closeup.webp",
+        bg: "./assets/story/intro_1/mc_emotional_closeup.webp",
         cam: "zoom-slow",
         fx: "heartbeat",
         role: "masha",
@@ -484,7 +485,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Двери подъехавшего троллейбуса с шипением распахиваются*
-        bg: "./assets/v3/sd_intro1_trolley_doors_open.webp",
+        bg: "./assets/locations/orphanage/trolley_doors_open.webp",
         cam: "zoom-slow",
         fx: "door",
         role: "mct",
@@ -502,8 +503,8 @@ export function buildPrologueScript() {
       {
         // *#Раскадровка: салон троллейбуса, ГГ сидит ровно, прислонившись виском к холодному стеклу*
         location: "ТРОЛЛЕЙБУС • СУМЕРКИ",
-        bg: "./assets/v3/sd_intro2_trolleybus_temple.webp",
-        video: "./assets/v2/vid_01_trolleybus.mp4",
+        bg: "./assets/story/intro_2/trolleybus_mc_temple.webp",
+        video: "./assets/videos/loops/trolleybus_temple_10s.mp4",
         videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
@@ -515,8 +516,9 @@ export function buildPrologueScript() {
       },
       {
         // *#Макрошот капель на окне троллейбуса*
-        bg: "./assets/v3/sd_intro2_macro_raindrops_window.webp",
-        video: null,
+        bg: "./assets/locations/trolleybus/macro_raindrops.webp",
+        video: "./assets/videos/loops/macro_raindrops_10s.mp4",
+        videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
         role: "mct",
@@ -527,7 +529,7 @@ export function buildPrologueScript() {
       {
         // *#Переход в сепию воспоминания: коридор старой квартиры, Вероника и плачущая Маша*
         location: "ВОСПОМИНАНИЕ • 12 ЛЕТ НАЗАД",
-        bg: "./assets/v2/cg_intro2_flashback_sepia.webp",
+        bg: "./assets/story/intro_2/flashback_sepia.webp",
         video: null,
         cam: "sepia",
         fxShader: "none",
@@ -557,8 +559,8 @@ export function buildPrologueScript() {
       {
         // *#Возврат в реальность салона троллейбуса на стыке асфальта*
         location: "ТРОЛЛЕЙБУС • ЦЕНТР",
-        bg: "./assets/v3/sd_intro2_trolleybus_temple.webp",
-        video: "./assets/v2/vid_01_trolleybus.mp4",
+        bg: "./assets/story/intro_2/trolleybus_mc_temple.webp",
+        video: "./assets/videos/loops/trolleybus_temple_10s.mp4",
         videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
@@ -595,7 +597,7 @@ export function buildPrologueScript() {
 
     Intro_2_fantasy_a: [
       {
-        bg: "./assets/v2/cg_intro2_fantasy_librarian.webp",
+        bg: "./assets/story/intro_2/fantasy_librarian.webp",
         video: null,
         cam: "zoom-slow",
         fxShader: "none",
@@ -609,7 +611,7 @@ export function buildPrologueScript() {
 
     Intro_2_fantasy_b: [
       {
-        bg: "./assets/v2/cg_intro2_fantasy_office.webp",
+        bg: "./assets/story/intro_2/fantasy_office.webp",
         video: null,
         cam: "zoom-slow",
         fxShader: "none",
@@ -625,8 +627,8 @@ export function buildPrologueScript() {
       {
         // *#Визг тормозов, троллейбус причаливает к вечернему бульвару*
         location: "БУЛЬВАРНОЕ КОЛЬЦО • 20:20",
-        bg: "./assets/v3/sd_intro2_trolleybus_temple.webp",
-        video: "./assets/v2/vid_01_trolleybus.mp4",
+        bg: "./assets/story/intro_2/trolleybus_mc_temple.webp",
+        video: "./assets/videos/loops/trolleybus_temple_10s.mp4",
         videoMode: "loop",
         fxShader: "trolleybus_glass",
         fx: "brakes",
@@ -647,7 +649,7 @@ export function buildPrologueScript() {
       {
         // *#Раскадровка: Малая Бронная, у витрины под маркизом стоит ослепительная Маша, проезд камеры снизу вверх*
         location: "МАЛАЯ БРОННАЯ • 20:30",
-        bg: "./assets/v3/sd_intro3_masha_reveal_clean.webp",
+        bg: "./assets/story/intro_3/masha_reveal.webp",
         video: null,
         sprite: null,
         cam: "pan-up-reveal",
@@ -684,8 +686,8 @@ export function buildPrologueScript() {
         text: "Все мои жалкие фантазии про «бабушкин кардиган» рассыпаются в пыль. Передо мной стоит настолько красивая взрослая женщина, что хочется провалиться сквозь мокрую брусчатку вместе со своим полинявшим рюкзаком."
       },
       {
-        bg: "./assets/v2/bg_malaya_bronnaya_ext.webp",
-        sprite: "./assets/v3/sd_spr_masha_coat_guarded.webp",
+        bg: "./assets/locations/malaya_bronnaya/street_rain.webp",
+        sprite: "./assets/sprites/masha/coat_guarded.webp",
         fxShader: "rain_exterior",
         role: "masha",
         speaker: "Маша",
@@ -726,7 +728,7 @@ export function buildPrologueScript() {
 
     Intro_3_trap_pass: [
       {
-        sprite: "./assets/v3/sd_spr_masha_coat_warm.webp",
+        sprite: "./assets/sprites/masha/coat_warm.webp",
         role: "mc",
         speaker: "{mc}",
         portraitMood: "calm",
@@ -742,7 +744,7 @@ export function buildPrologueScript() {
 
     Intro_3_trap_slip: [
       {
-        sprite: "./assets/v3/sd_spr_masha_coat_guarded.webp",
+        sprite: "./assets/sprites/masha/coat_guarded.webp",
         role: "masha",
         speaker: "Маша",
         text: "Мимо. Мы вообще ни разу в жизни не были на море. Плохо подготовился?"
@@ -754,7 +756,7 @@ export function buildPrologueScript() {
         text: "Прости, я просто растерялся рядом с тобой… Смотри: это же папины часы, с которыми он забирал нас из парка, и шрам от тех зелёных качелей во дворе, когда ты нечаянно задела меня и полчаса дула на лоб!"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_coat_warm.webp",
+        sprite: "./assets/sprites/masha/coat_warm.webp",
         role: "masha",
         speaker: "Маша",
         text: "Часы дяди Вити… И та самая отметина у брови. Фух, напугал до чёртиков, я уж решила, совсем чужой человек пришёл."
@@ -765,8 +767,8 @@ export function buildPrologueScript() {
     Intro_3_hug: [
       {
         // *#Маша порывисто обнимает Артёма за шею*
-        bg: "./assets/v3/sd_intro3_hug_clean.webp",
-        video: "./assets/v2/vid_11_hug_awkward.mp4",
+        bg: "./assets/story/intro_3/hug_embrace.webp",
+        video: "./assets/videos/oneshots/hug_embrace_5s.mp4",
         videoMode: "once",
         sprite: null,
         cam: "zoom-slow",
@@ -791,9 +793,9 @@ export function buildPrologueScript() {
       {
         // *#Переход за угловой столик внутри кофейни*
         location: "КОФЕЙНЯ НА БРОННОЙ • 20:45",
-        bg: "./assets/v2/bg_cafe_malaya_bronnaya.webp",
+        bg: "./assets/locations/malaya_bronnaya/cafe_booth.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_cafe_warm.webp",
+        sprite: "./assets/sprites/masha/cafe_warm.webp",
         cam: "zoom-slow",
         fxShader: "none",
         role: "masha",
@@ -807,7 +809,7 @@ export function buildPrologueScript() {
         text: "Тётя Валя со второго этажа нашего старого дома помогла. Написал ей письмо весной, а она ответила, что случайно встретила тебя пару лет назад у аптеки и записала телефон. Я до последнего боялся звонить… Думал, ты вообще не захочешь вспоминать нашу семью."
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_warm.webp",
+        sprite: "./assets/sprites/masha/cafe_warm.webp",
         role: "masha",
         speaker: "Маша",
         text: "Дурак ты, {mc_dim}. Большой, а всё такой же глупый. Я и есть твоя семья!"
@@ -817,8 +819,8 @@ export function buildPrologueScript() {
 
     Intro_3_cafe_hub: [
       {
-        bg: "./assets/v2/bg_cafe_malaya_bronnaya.webp",
-        sprite: "./assets/v3/sd_spr_masha_cafe_warm.webp",
+        bg: "./assets/locations/malaya_bronnaya/cafe_booth.webp",
+        sprite: "./assets/sprites/masha/cafe_warm.webp",
         fxShader: "none",
         dynamicChoices: (state) => {
           const asked = state.flags.cafeTopics || {};
@@ -876,7 +878,7 @@ export function buildPrologueScript() {
         text: "Маш… Я ведь тогда в шесть лет толком ничего не понял. Помню только, как твоя мама привезла меня в приёмник и больше ни разу не приехала. Вы потом уехали из Москвы?"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_sad.webp",
+        sprite: "./assets/sprites/masha/cafe_sad.webp",
         role: "masha",
         speaker: "Маша",
         text: "На полгода уезжали к бабушке в Тверь. Мама продала ту квартиру почти за бесценок, чтобы раздать долги по счетам. Я первое время каждый вечер ревела в подушку и просила забрать тебя обратно… Но мама отрезала как ножом: «Чужая кровь, чужая беда. У меня нет сил тянуть двоих»."
@@ -893,7 +895,7 @@ export function buildPrologueScript() {
         text: "А твоя мама сейчас где? Вы общаетесь?"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_tease.webp",
+        sprite: "./assets/sprites/masha/cafe_tease.webp",
         role: "masha",
         speaker: "Маша",
         text: "Вероника Павловна у нас теперь дама из высшего света. Четыре года назад удачно вышла замуж за владельца сети клиник, живёт за городом на Новой Риге. Звонит раз в месяц отчитать меня за образ жизни. В общем, держим вежливый нейтралитет."
@@ -910,6 +912,8 @@ export function buildPrologueScript() {
     Intro_3_topic_father: [
       {
         // *#ГГ снимает с руки потёртые часы отца и кладёт на столик между чашками*
+        bg: "./assets/story/intro_3/father_watch_table.webp",
+        sprite: null,
         fx: "tap",
         role: "mc",
         speaker: "{mc}",
@@ -917,7 +921,8 @@ export function buildPrologueScript() {
         text: "Все эти годы в интернате мне не давала покоя одна мысль, Маш. Воспитатели за спиной шептались, что батя просто бросил меня и сбежал с вашими деньгами. Но он же пылинки с нас обоих сдувал… Неужели он правда оказался таким подлецом?"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_sad.webp",
+        bg: "./assets/locations/malaya_bronnaya/cafe_booth.webp",
+        sprite: "./assets/sprites/masha/cafe_sad.webp",
         role: "masha",
         speaker: "Маша",
         text: "Я не знаю всей правды, {mc_dim}. Честно. В ту последнюю неделю дядя Витя ходил сам не свой: почти не спал, выходил звонить на лестницу и проверял замки по три раза за ночь. А потом мама открыла шкатулку с отложенными деньгами, а там пусто и его документов нет."
@@ -939,7 +944,7 @@ export function buildPrologueScript() {
     Intro_3_topic_job: [
       {
         // *#В сумочке вибрирует второй телефон; Маша касается чокера*
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         fx: "phone_buzz",
         role: "masha",
         speaker: "Маша",
@@ -947,8 +952,8 @@ export function buildPrologueScript() {
       },
       {
         // *#Крупный план столика: Маша кладёт второй iPhone экраном вниз*
-        bg: "./assets/v2/cg_intro3_secret_call.webp",
-        video: "./assets/v2/vid_03_secret_call.mp4",
+        bg: "./assets/story/intro_3/secret_call.webp",
+        video: "./assets/videos/oneshots/secret_call_5s.mp4",
         videoMode: "once",
         cam: "zoom-slow",
         sprite: null,
@@ -957,9 +962,9 @@ export function buildPrologueScript() {
         text: "Сама себе хозяйка, процент со сделок хороший, вот и приоделась немного. Просто клиенты у меня сплошь занятые мужчины. Днём у них совещания, поэтому показы вечно ставят на поздний вечер или в закрытых ресторанах. Приходится держать марку!"
       },
       {
-        bg: "./assets/v2/bg_cafe_malaya_bronnaya.webp",
+        bg: "./assets/locations/malaya_bronnaya/cafe_booth.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         role: "mct",
         speaker: "{mc}",
         portraitMood: "calm",
@@ -977,7 +982,7 @@ export function buildPrologueScript() {
     Intro_3_depart: [
       {
         // *#Маша накрывает ладонью запястье ГГ, не давая встать*
-        sprite: "./assets/v3/sd_spr_masha_cafe_tease.webp",
+        sprite: "./assets/sprites/masha/cafe_tease.webp",
         fx: "cloth",
         role: "masha",
         speaker: "Маша",
@@ -990,7 +995,7 @@ export function buildPrologueScript() {
         text: "Ну… У меня направление в общагу в Текстильщиках, только заселение с понедельника. Ничего страшного, переночую пару ночей в хостеле у вокзала, подъёмных хватит."
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_tease.webp",
+        sprite: "./assets/sprites/masha/cafe_tease.webp",
         role: "masha",
         speaker: "Маша",
         text: "Ты с ума сошёл?! В привокзальном клоповнике в день своего совершеннолетия при живой старшей сестре в Москве?! Даже слушать не стану. Берёшь рюкзак и едешь ко мне."
@@ -1002,14 +1007,14 @@ export function buildPrologueScript() {
         text: "Маш, ну неудобно же! Мы столько лет не виделись, у тебя своя взрослая жизнь, а тут я свалился как снег на голову…"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_warm.webp",
+        sprite: "./assets/sprites/masha/cafe_warm.webp",
         role: "masha",
         speaker: "Маша",
         text: "Цыц, я на четыре года старше, со мной спорить бесполезно! У меня в гостиной диван размером со взлётную полосу, места полно. Только…"
       },
       {
         // *#Маша осекается, прикусив губу*
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         role: "masha",
         speaker: "Маша",
         text: "Только чур без лишних вопросов и по комнатам без спроса не ходить, договорились? Я с утра убегала в спешке и не ждала гостей… Пошли к машине, я тут за углом припарковалась!"
@@ -1024,7 +1029,7 @@ export function buildPrologueScript() {
       {
         // *#Раскадровка: у обочины в дожде мигает фарами чёрный Porsche; общий проезд к Сити*
         location: "САДОВОЕ → ПРЕСНЯ • 21:45",
-        bg: "./assets/v3/sd_intro4_porsche_ext.webp",
+        bg: "./assets/story/intro_4/porsche_ext.webp",
         video: null,
         sprite: null,
         cam: "zoom-slow",
@@ -1038,7 +1043,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Двухплановый кадр через мокрое лобовое стекло (капотная камера, правило 180 градусов)*
-        bg: "./assets/v3/sd_intro4_porsche_two_shot.webp",
+        bg: "./assets/story/intro_4/porsche_two_shot_lhd.webp",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
         role: "masha",
@@ -1047,7 +1052,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Обратная точка 180° на Артёма на пассажирском кресле*
-        bg: "./assets/v3/sd_intro4_porsche_ots_mc.webp",
+        bg: "./assets/story/intro_4/porsche_ots_mc_lhd.webp",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
         role: "mct",
@@ -1063,7 +1068,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Камера от пассажира на Машу за рулём (восьмёрка 180°)*
-        bg: "./assets/v3/sd_intro4_porsche_ots_masha.webp",
+        bg: "./assets/story/intro_4/porsche_ots_masha_lhd.webp",
         cam: "zoom-slow",
         fxShader: "trolleybus_glass",
         role: "masha",
@@ -1071,14 +1076,14 @@ export function buildPrologueScript() {
         text: "Служебная машина от агентства, дают ведущим брокерам под статусных клиентов. Не приезжать же на сделку в Сити на трамвае, меня там охрана у шлагбаума засмеёт."
       },
       {
-        bg: "./assets/v3/sd_intro4_porsche_two_shot.webp",
+        bg: "./assets/story/intro_4/porsche_two_shot_lhd.webp",
         role: "mc",
         speaker: "{mc}",
         portraitMood: "calm",
         text: "А водишь ты так уверенно давно?"
       },
       {
-        bg: "./assets/v3/sd_intro4_porsche_ots_masha.webp",
+        bg: "./assets/story/intro_4/porsche_ots_masha_lhd.webp",
         role: "masha",
         speaker: "Маша",
         text: "Третий год за рулём. Ночью под дождём за баранкой даже голова отдыхает. Пристегнись получше, Соколов, через три минуты будем у моего дома."
@@ -1086,9 +1091,8 @@ export function buildPrologueScript() {
       {
         // *#Подъём на 32 этаж небоскрёба на Пресне, панорама Москва-Сити во всю стену*
         location: "ПРЕСНЯ, 32 ЭТАЖ • 22:05",
-        bg: "./assets/v2/cg_intro4_penthouse_arrival.webp",
-        video: "./assets/v2/vid_12_penthouse_arrival.mp4",
-        videoMode: "once",
+        bg: "./assets/story/intro_4/penthouse_arrival.webp",
+        video: null,
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_night",
@@ -1100,9 +1104,9 @@ export function buildPrologueScript() {
         text: "Обалдеть… Маш, тут вид как из кабины самолёта! И это всё твоя квартира?"
       },
       {
-        bg: "./assets/v3/sd_living_rain_evening.webp",
+        bg: "./assets/locations/penthouse/livingroom/rain_evening.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         role: "masha",
         speaker: "Маша",
         text: "Эм… Ну не в собственности. Подруга улетела жить в Дубай, а я снимаю у неё по старой дружбе и присматриваю за порядком! Разувайся, проходи в гостиную, только дай мне две минуты прибрать вещи…"
@@ -1118,13 +1122,13 @@ export function buildPrologueScript() {
       {
         // *#Звонок второго iPhone от Артура*
         fx: "phone_ring",
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         role: "masha",
         speaker: "Маша",
         text: "Да, Артур, я уже дома, через десять минут спускаюсь к машине… Помню я про ложу и про одиннадцать ноль-ноль, не отчитывай меня как школьницу. Буду вовремя."
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_warm.webp",
+        sprite: "./assets/sprites/masha/cafe_warm.webp",
         role: "masha",
         speaker: "Маша",
         text: "{mc_dim_k}, прости ради бога, глупо вышло! Тот самый капризный клиент из Сити перенёс показ пентхауса прямо на сейчас. Если сорву встречу, потеряю комиссию за полгода."
@@ -1136,7 +1140,7 @@ export function buildPrologueScript() {
         text: "Да я понимаю, работа есть работа. Только на улице ливень стеной и одиннадцатый час ночи… Может, я с тобой за компанию съезжу, подожду внизу в холле?"
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_nervous.webp",
+        sprite: "./assets/sprites/masha/cafe_nervous.webp",
         role: "masha",
         speaker: "Маша",
         text: "Нет-нет, даже не выдумывай, туда охрана без заказанного пропуска близко не подпустит! В холодильнике свежие роллы и ягоды, чистое полотенце оставила тебе на диване. Второй телефон разрядился на зарядке в спальне, туда чур не заходить! Вернусь поздно, ложись спать!"
@@ -1173,7 +1177,7 @@ export function buildPrologueScript() {
     Intro_5: [
       {
         location: "ПРЕСНЯ • 23:15",
-        bg: "./assets/v3/sd_living_rain_evening.webp",
+        bg: "./assets/locations/penthouse/livingroom/rain_evening.webp",
         video: null,
         sprite: null,
         cam: "dim",
@@ -1187,9 +1191,8 @@ export function buildPrologueScript() {
       {
         // *#01:42 ночи: замок тихо пищит, в проёме прихожей появляется Маша в сапфировом платье*
         location: "МОСКВА • 01:42",
-        bg: "./assets/v3/sd_intro5_01_doorway_wide.webp",
-        video: "./assets/v2/vid_04_night_return.mp4",
-        videoMode: "once",
+        bg: "./assets/story/intro_5/01_doorway_wide.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "lock_beep",
@@ -1200,7 +1203,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Нижний ракурс: туфли на шпильке в опущенной руке, босые шаги по паркету*
-        bg: "./assets/v3/sd_intro5_02_low_heels_hem.webp",
+        bg: "./assets/story/intro_5/02_low_heels_hem.webp",
         video: null,
         cam: "pan-up-reveal",
         fxShader: "moscow_city_calm",
@@ -1212,7 +1215,7 @@ export function buildPrologueScript() {
       },
       {
         // *#POV сквозь полуопущенные ресницы с дивана*
-        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        bg: "./assets/story/intro_5/03_sofa_lashes_pov.webp",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "heartbeat",
@@ -1245,7 +1248,7 @@ export function buildPrologueScript() {
 
     Intro_5_sleep: [
       {
-        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        bg: "./assets/story/intro_5/03_sofa_lashes_pov.webp",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         role: "masha",
@@ -1254,9 +1257,8 @@ export function buildPrologueScript() {
       },
       {
         // *#Общий план от дивана: Маша подходит к панорамному окну Москва-Сити*
-        bg: "./assets/v3/sd_intro5_04_window_silhouette_ots.webp",
-        video: "./assets/v2/vid_05_night_silhouette.mp4",
-        videoMode: "once",
+        bg: "./assets/story/intro_5/04_window_silhouette.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "cloth",
@@ -1267,8 +1269,9 @@ export function buildPrologueScript() {
       },
       {
         // *#Макро-ракурс: бегунок потайной молнии скользит вниз вдоль спины*
-        bg: "./assets/v3/sd_intro5_05_macro_spine_zipper.webp",
-        video: null,
+        bg: "./assets/story/intro_5/05_macro_spine_zipper.webp",
+        video: "./assets/videos/oneshots/spine_zipper_5s.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "cloth",
@@ -1279,7 +1282,9 @@ export function buildPrologueScript() {
       },
       {
         // *#Нижний ракурс: сапфировый шёлк опадает к босым ступням*
-        bg: "./assets/v3/sd_intro5_06_low_silk_stockings.webp",
+        bg: "./assets/story/intro_5/06_low_silk_stockings.webp",
+        video: "./assets/videos/oneshots/silk_stockings_5s.mp4",
+        videoMode: "once",
         cam: "pan-up-reveal",
         fxShader: "moscow_city_calm",
         fx: "heartbeat",
@@ -1290,7 +1295,8 @@ export function buildPrologueScript() {
       },
       {
         // *#Ракурс через отражение в тёмном панорамном стекле*
-        bg: "./assets/v3/sd_intro5_07_glass_reflection.webp",
+        bg: "./assets/story/intro_5/07_glass_reflection.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "heartbeat",
@@ -1301,7 +1307,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Маша наклоняется над диваном и поправляет плед на плече Артёма*
-        bg: "./assets/v3/sd_intro5_03_sofa_lashes_pov.webp",
+        bg: "./assets/story/intro_5/03_sofa_lashes_pov.webp",
         fx: "cloth",
         role: "masha",
         speaker: "Маша (шёпотом)",
@@ -1318,9 +1324,8 @@ export function buildPrologueScript() {
 
     Intro_5_awake: [
       {
-        bg: "./assets/v2/cg_intro5_awake_sofa.webp",
-        video: "./assets/v2/vid_06_awake_sofa.mp4",
-        videoMode: "loop",
+        bg: "./assets/story/intro_5/awake_sofa.webp",
+        video: null,
         sprite: null,
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
@@ -1335,16 +1340,16 @@ export function buildPrologueScript() {
         text: "На новом месте всегда сплю вполглаза, старая привычка. Да и неспокойно было, пока ты ездила одна в такую темень."
       },
       {
-        bg: "./assets/v3/sd_living_night_clear.webp",
+        bg: "./assets/locations/penthouse/livingroom/night_clear.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_night_sapphire.webp",
+        sprite: "./assets/sprites/masha/night_sapphire.webp",
         fx: "cloth",
         role: "masha",
         speaker: "Маша",
         text: "Отвыкла я, чтобы дома кто-то ждал и спрашивал, как доехала… Извини, если пахнет шампанским. Пришлось весь вечер держать улыбку перед тяжёлыми людьми, голова гудит, и сна ни в одном глазу."
       },
       {
-        sprite: "./assets/v3/sd_spr_masha_cafe_tease.webp",
+        sprite: "./assets/sprites/masha/cafe_tease.webp",
         role: "masha",
         speaker: "Маша",
         text: "Слушай, Соколов, раз уж нам обоим не спится… Помнишь, как я в десять лет гадала тебе под одеялом с фонариком на «будущую невесту»? Двигай ноги, у меня в ящике подарочная колода лежит. Раскину тебе взрослый расклад на Четырёх Королев!"
@@ -1356,7 +1361,7 @@ export function buildPrologueScript() {
         text: "Какие ещё королевы, Маш? Я полдня как за ворота интерната вышел."
       },
       {
-        bg: "./assets/v3/sd_intro5_08_cards_table_pov.webp",
+        bg: "./assets/story/intro_5/08_cards_table_pov.webp",
         sprite: null,
         cam: "zoom-slow",
         fx: "cloth",
@@ -1371,9 +1376,8 @@ export function buildPrologueScript() {
 
     Intro_5_cards_win: [
       {
-        bg: "./assets/v2/cg_intro5_awake_sofa.webp",
-        video: "./assets/v2/vid_06_awake_sofa.mp4",
-        videoMode: "loop",
+        bg: "./assets/story/intro_5/awake_sofa.webp",
+        video: null,
         sprite: null,
         fx: "heartbeat",
         effect: (s, api) => {
@@ -1407,9 +1411,8 @@ export function buildPrologueScript() {
 
     Intro_5_cards_miss: [
       {
-        bg: "./assets/v2/cg_intro5_awake_sofa.webp",
-        video: "./assets/v2/vid_06_awake_sofa.mp4",
-        videoMode: "loop",
+        bg: "./assets/story/intro_5/awake_sofa.webp",
+        video: null,
         sprite: null,
         fx: "tap",
         effect: (s, api) => {
@@ -1476,9 +1479,9 @@ export function buildPrologueScript() {
         text: "За двенадцать лет многому успеваешь научиться. Иди отдыхай, я рядом."
       },
       {
-        bg: "./assets/v3/sd_living_night_clear.webp",
+        bg: "./assets/locations/penthouse/livingroom/night_clear.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_night_sapphire.webp",
+        sprite: "./assets/sprites/masha/night_sapphire.webp",
         role: "masha",
         speaker: "Маша",
         text: "Да уж… Пожалуй, мне правда пора в спальню, пока шампанское окончательно не ударило в голову. Спокойной ночи, защитник."
@@ -1499,9 +1502,9 @@ export function buildPrologueScript() {
         text: "Не уходи никуда… Посиди так минутку, ладно? Господи, как же с тобой спокойно и тепло, {mc_dim_k}… Я уже и забыла, каково это, когда рядом сидят просто так, ничего не требуя взамен."
       },
       {
-        bg: "./assets/v3/sd_living_night_clear.webp",
+        bg: "./assets/locations/penthouse/livingroom/night_clear.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_night_sapphire.webp",
+        sprite: "./assets/sprites/masha/night_sapphire.webp",
         role: "masha",
         speaker: "Маша",
         text: "Спасибо тебе за этот вечер, родной. Спи крепко, завтра начнём твою новую московскую жизнь."
@@ -1512,7 +1515,7 @@ export function buildPrologueScript() {
     Intro_5_end: [
       {
         location: "РАССВЕТ НАД ПРЕСНЕЙ • 05:20",
-        bg: "./assets/v3/sd_living_dawn_mist.webp",
+        bg: "./assets/locations/penthouse/livingroom/dawn_mist.webp",
         video: null,
         sprite: null,
         fx: "door",
@@ -1530,7 +1533,7 @@ export function buildPrologueScript() {
     Intro_6: [
       {
         location: "МОСКВА • 07:30 УТРА",
-        bg: "./assets/v3/sd_living_morning_sun.webp",
+        bg: "./assets/locations/penthouse/livingroom/morning_sun.webp",
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1542,9 +1545,8 @@ export function buildPrologueScript() {
       {
         // *#Кадр 1: приоткрытая дверь ванной, пар и силуэт за стеклом душевой*
         location: "ВАННАЯ • 07:32",
-        bg: "./assets/v3/sd_intro6_01_shower_door_ajar.webp",
-        video: "./assets/v2/vid_07_shower_steam.mp4",
-        videoMode: "loop",
+        bg: "./assets/story/intro_6/01_shower_door_ajar.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "shower_steam",
         ambience: "shower",
@@ -1555,7 +1557,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Кадр 2: нижний контровой ракурс сквозь пар в солнечных лучах*
-        bg: "./assets/v3/sd_intro6_02_shower_low_angle.webp",
+        bg: "./assets/story/intro_6/02_shower_low_angle.webp",
         video: null,
         cam: "pan-up-reveal",
         fxShader: "shower_steam",
@@ -1567,7 +1569,7 @@ export function buildPrologueScript() {
       },
       {
         // *#Кадр 3: верхний ракурс под тропической лейкой*
-        bg: "./assets/v3/sd_intro6_03_shower_high_angle.webp",
+        bg: "./assets/story/intro_6/03_shower_high_angle.webp",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         fx: "heartbeat",
@@ -1599,7 +1601,9 @@ export function buildPrologueScript() {
     Intro_6_shower_look: [
       {
         // *#Кадр 4: отражение в запотевшем зеркале и звон задетого флакона*
-        bg: "./assets/v3/sd_intro6_04_shower_steamy_mirror.webp",
+        bg: "./assets/story/intro_6/04_shower_steamy_mirror.webp",
+        video: "./assets/videos/oneshots/steamy_mirror_5s.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         fx: "glass_clink",
@@ -1641,9 +1645,8 @@ export function buildPrologueScript() {
     Intro_6_high_loyalty: [
       {
         location: "КОРИДОР И ГАРДЕРОБНАЯ • 07:36",
-        bg: "./assets/v2/cg_intro6_towel_high_loyalty.webp",
-        video: "./assets/v2/vid_08_towel_high.mp4",
-        videoMode: "once",
+        bg: "./assets/story/intro_6/towel_high_loyalty.webp",
+        video: null,
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1671,9 +1674,9 @@ export function buildPrologueScript() {
       },
       {
         // *#Маша проходит к гардеробной в коротком полотенце и прикладывает два наряда*
-        bg: "./assets/v3/sd_bedroom_morning_sun.webp",
+        bg: "./assets/locations/penthouse/bedroom/morning_sun.webp",
         video: null,
-        sprite: "./assets/v3/sd_spr_masha_towel_flirt.webp",
+        sprite: "./assets/sprites/masha/towel_flirt.webp",
         fx: "cloth",
         role: "masha",
         speaker: "Маша",
@@ -1697,7 +1700,7 @@ export function buildPrologueScript() {
     Intro_6_low_loyalty: [
       {
         location: "У ДВЕРИ ВАННОЙ • 07:36",
-        bg: "./assets/v2/cg_intro6_towel_low_loyalty.webp",
+        bg: "./assets/story/intro_6/towel_low_loyalty.webp",
         cam: "zoom-slow",
         fxShader: "morning_sun",
         ambience: "morning",
@@ -1727,7 +1730,7 @@ export function buildPrologueScript() {
     Intro_6_kitchen_finale: [
       {
         location: "КУХНЯ-БАР • 07:48",
-        bg: "./assets/v3/sd_kitchen_morning_sun.webp",
+        bg: "./assets/locations/penthouse/kitchen/morning_sun.webp",
         sprite: null,
         video: null,
         cam: "zoom-slow",
@@ -1767,8 +1770,8 @@ export function buildPrologueScript() {
       {
         // *#Трель видеодомофона, на экране появляется Ленка с двумя стаканами кофе*
         location: "ПРИХОЖАЯ • 07:52",
-        bg: "./assets/v3/cg_intro6_lenka_intercom_v3.webp",
-        video: "./assets/v2/vid_13_lenka_intercom.mp4",
+        bg: "./assets/story/intro_6/lenka_intercom.webp",
+        video: "./assets/videos/oneshots/lenka_intercom_5s.mp4",
         videoMode: "once",
         cam: "zoom-slow",
         fxShader: "none",

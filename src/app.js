@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.1";
-import { FxEngine } from "./fx.js?v=3.1";
+import { sound } from "./audio.js?v=3.2";
+import { FxEngine } from "./fx.js?v=3.2";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,8 +9,8 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.1";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.1";
+} from "./sandbox.js?v=3.2";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.2";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -127,7 +127,7 @@ function createInitialState(playerName = "Артём") {
     blockId: "Intro_1",
     stepIndex: 0,
     location: "ПРОХОДНАЯ ИНТЕРНАТА • 08:45",
-    lastBg: "./assets/v3/interim_intro1_signboard.webp",
+    lastBg: "./assets/locations/orphanage/signboard_gates.webp",
     lastCam: "zoom-slow",
     lastFxShader: "rain_exterior",
     lastAmbience: "rain",
@@ -1104,7 +1104,7 @@ function applyIncomingCard(cardData) {
 }
 
 function applyPortraitAvatar(role, mood) {
-  // По GDD портрет Маши и рассказчика не дублируется в диалоговом окне
+  // По GDD портрет Маши и Коменданта не дублируется в диалоговом окне
   if (!mood || role === "narrator" || role === "masha" || role === "komendant") {
     dom.speakerAvatarWrap.hidden = true;
     return;
@@ -1113,41 +1113,33 @@ function applyPortraitAvatar(role, mood) {
   dom.speakerAvatarWrap.hidden = false;
   const spriteEl = dom.speakerAvatarSprite;
   const monoEl = dom.speakerAvatarFallback;
+  monoEl.hidden = true;
+  spriteEl.hidden = false;
 
-  if (hasV2AvatarSheet) {
-    monoEl.hidden = true;
-    spriteEl.hidden = false;
-    spriteEl.style.backgroundImage = `url("${v2AvatarSheetUrl}")`;
-    spriteEl.style.backgroundSize = "200% 200%";
-    const posMap = {
-      calm: "0% 0%",
-      shy: "100% 0%",
-      katya: "0% 100%",
-      lenka: "100% 100%"
-    };
-    spriteEl.style.backgroundPosition = posMap[mood] || "0% 0%";
+  if (mood === "katya" || role === "katya") {
+    spriteEl.style.backgroundImage = 'url("./assets/characters/katya/katya_avatar.webp")';
+    spriteEl.style.backgroundSize = "cover";
+    spriteEl.style.backgroundPosition = "center";
     return;
   }
 
-  // Fallback до завершения рендера ava_characters_v2
-  if (mood === "calm" || mood === "shy") {
-    monoEl.hidden = true;
-    spriteEl.hidden = false;
-    spriteEl.style.backgroundImage = 'url("./assets/ava_mc_sheet.webp")';
-    spriteEl.style.backgroundSize = "200% 200%";
-    spriteEl.style.backgroundPosition = mood === "shy" ? "0% 100%" : "0% 0%";
-  } else if (mood === "lenka") {
-    monoEl.hidden = true;
-    spriteEl.hidden = false;
-    spriteEl.style.backgroundImage = 'url("./assets/ava_lenka_phone.webp")';
+  if (mood === "lenka" || role === "lenka") {
+    spriteEl.style.backgroundImage = 'url("./assets/characters/lenka/lenka_avatar.webp")';
     spriteEl.style.backgroundSize = "cover";
-    spriteEl.style.backgroundPosition = "center 18%";
-  } else {
-    // Для Кати без v2-листа выводим изящную монограмму, чтобы не показывать лицо ГГ
-    spriteEl.hidden = true;
-    monoEl.hidden = false;
-    monoEl.textContent = "К";
+    spriteEl.style.backgroundPosition = "center";
+    return;
   }
+
+  // Каноничный 2x2 лист эмоций ГГ (Артём: calm, shy, tense, warm)
+  spriteEl.style.backgroundImage = 'url("./assets/characters/mc/artyom_sheet.webp")';
+  spriteEl.style.backgroundSize = "200% 200%";
+  const mcPosMap = {
+    calm: "0% 0%",
+    shy: "100% 0%",
+    tense: "0% 100%",
+    warm: "100% 100%"
+  };
+  spriteEl.style.backgroundPosition = mcPosMap[mood] || "0% 0%";
 }
 
 // ==================== ПЕЧАТЬ ТЕКСТА И БЭКЛОГ ====================
@@ -1276,6 +1268,35 @@ function handleChoicePick(choice) {
 }
 
 // ==================== ИСПОЛНЕНИЕ ШАГОВ СЦЕНАРИЯ ====================
+function isIndoorSceneContext(loc = "", bg = "") {
+  const l = String(loc).toUpperCase();
+  const b = String(bg).toLowerCase();
+  if (
+    l.includes("КОФЕЙНЯ") ||
+    l.includes("ПРЕСНЯ") ||
+    l.includes("ГОСТИНАЯ") ||
+    l.includes("КУХНЯ") ||
+    l.includes("ВАННАЯ") ||
+    l.includes("СПАЛЬНЯ") ||
+    l.includes("КОРИДОР") ||
+    l.includes("ПРИХОЖАЯ") ||
+    l.includes("ВОСПОМИНАНИЕ") ||
+    l.includes("МОСКВА • 01:42") ||
+    l.includes("МОСКВА • 07:30") ||
+    l.includes("РАССВЕТ НАД ПРЕСНЕЙ")
+  ) {
+    return true;
+  }
+  return (
+    b.includes("/penthouse/") ||
+    b.includes("cafe_booth") ||
+    b.includes("father_watch_table") ||
+    b.includes("secret_call") ||
+    b.includes("/intro_5/") ||
+    b.includes("/intro_6/")
+  );
+}
+
 function applyStepPresentation(step) {
   if (step.location) {
     state.location = step.location;
@@ -1314,6 +1335,21 @@ function applyStepPresentation(step) {
   if (step.ambience) {
     state.lastAmbience = step.ambience;
     sound.setAmbience(step.ambience);
+  }
+
+  // Строгая защита: при входе в любое помещение автоматически выключаем уличный дождь (шейдер и звук)
+  if (isIndoorSceneContext(state.location, state.lastBg)) {
+    if (state.lastFxShader === "rain_exterior" || state.lastFxShader === "trolleybus_glass") {
+      state.lastFxShader = "none";
+      fxEngine?.setMode("none");
+    }
+    if (state.lastAmbience === "rain" || state.lastAmbience === "trolleybus") {
+      const nextIndoorAmbience = String(state.location).toUpperCase().includes("КОФЕЙНЯ")
+        ? "cafe"
+        : "penthouse";
+      state.lastAmbience = nextIndoorAmbience;
+      sound.setAmbience(nextIndoorAmbience);
+    }
   }
 
   if (step.fx) {

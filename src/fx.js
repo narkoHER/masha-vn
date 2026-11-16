@@ -248,17 +248,8 @@ export class FxEngine {
         { x: w * 0.68, y: h * 0.15 },
         { x: w * 0.83, y: h * 0.18 }
       ];
+      // Внутри помещений пентхауса дождь на холсте отключён (только огни и шпили башен за окном)
       const glassRain = [];
-      const count = mode === "moscow_city_night" ? 36 : 0;
-      for (let i = 0; i < count; i++) {
-        glassRain.push({
-          x: Math.random() * w,
-          y: Math.random() * h * 0.78,
-          len: 18 + Math.random() * 18,
-          speed: 220 + Math.random() * 110,
-          alpha: 0.04 + Math.random() * 0.045
-        });
-      }
       this.particles = { windows, beacons, glassRain };
     } else if (mode === "shower_steam") {
       const plumes = [];
