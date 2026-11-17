@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.6";
-import { FxEngine } from "./fx.js?v=3.6";
+import { sound } from "./audio.js?v=3.7";
+import { FxEngine } from "./fx.js?v=3.7";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,9 +9,9 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.6";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.6";
-import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.6";
+} from "./sandbox.js?v=3.7";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.7";
+import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.7";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
