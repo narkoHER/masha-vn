@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.5";
-import { FxEngine } from "./fx.js?v=3.5";
+import { sound } from "./audio.js?v=3.6";
+import { FxEngine } from "./fx.js?v=3.6";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,9 +9,9 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.5";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.5";
-import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.5";
+} from "./sandbox.js?v=3.6";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.6";
+import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.6";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -2470,7 +2470,9 @@ function startChapterDirectJump(targetBlockId) {
   state.mode = "story";
 
   // Базовые улики и предметы Главы 1, если игрок прыгнул сразу в Главу 2 или 3 с чистого листа
-  if (!state.inventory.includes("katya_cross")) state.inventory.push("katya_cross");
+  if (!Array.isArray(state.items)) state.items = ["orphanage_referral", "father_watch"];
+  if (!Array.isArray(state.clues)) state.clues = [];
+  if (!state.items.includes("katya_cross")) state.items.push("katya_cross");
   for (const baseClue of ["clue_monpansier", "clue_father_week", "clue_realtor_cover", "clue_katya_archive"]) {
     if (!state.clues.includes(baseClue)) state.clues.push(baseClue);
   }
