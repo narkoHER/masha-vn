@@ -13,7 +13,7 @@
     rel="stylesheet"
   />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./styles.css?v=3.7" />
+  <link rel="stylesheet" href="./styles.css?v=3.8" />
 </head>
 <body>
   <div id="appRoot" class="app-shell">
@@ -23,7 +23,7 @@
         <img
           id="titleCoverImg"
           class="title-cover-img"
-          src="./assets/v2/title_cover_v2.webp"
+          src="./assets/ui/title_cover.webp"
           alt="Маша — вечерняя Москва"
           width="720"
           height="1280"
@@ -180,7 +180,7 @@
         <img
           id="stageBgBack"
           class="stage-bg stage-bg-back"
-          src="./assets/v2/bg_orphanage_gates.webp"
+          src="./assets/locations/orphanage/signboard_gates.webp"
           alt=""
           width="720"
           height="1280"
@@ -190,7 +190,7 @@
         <img
           id="stageBg"
           class="stage-bg stage-bg-front"
-          src="./assets/v2/bg_orphanage_gates.webp"
+          src="./assets/locations/orphanage/signboard_gates.webp"
           alt="Иллюстрация сцены"
           width="720"
           height="1280"
@@ -198,7 +198,7 @@
           decoding="async"
         />
 
-        <!-- Кинематографичный видеослой Kling 2.5 (бесшовный loop 9:16 поверх статичного кадра) -->
+        <!-- Кинематографичный видеослой (.webm / .mp4 поверх статичного кадра) -->
         <video
           id="stageVideo"
           class="stage-video"
@@ -206,7 +206,7 @@
           loop
           playsinline
           preload="metadata"
-          poster="./assets/v2/bg_orphanage_gates.webp"
+          poster="./assets/locations/orphanage/signboard_gates.webp"
           width="720"
           height="1280"
           hidden
@@ -859,6 +859,6 @@
   <p class="sr-only">Системные отклики выбора</p>
   <div id="srAnnouncer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
-  <script type="module" src="./src/app.js?v=3.7"></script>
+  <script type="module" src="./src/app.js?v=3.8"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.7";
-import { FxEngine } from "./fx.js?v=3.7";
+import { sound } from "./audio.js?v=3.8";
+import { FxEngine } from "./fx.js?v=3.8";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,9 +9,8 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.7";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.7";
-import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.7";
+} from "../scripts/sandbox/penthouse_free_roam.js?v=3.8";
+import { buildFullStoryScript } from "../scripts/story/index.js?v=3.8";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -23,15 +22,10 @@ const SAVE_KEY = "masha_vn_v2_save";
 const PREFS_KEY = "masha_vn_v2_prefs";
 const MASHA_PIN_CODE = "1408";
 
-const SCRIPT = {
-  ...buildPrologueScript(),
-  ...buildChapters2And3Script()
-};
+const SCRIPT = buildFullStoryScript();
 
-// Кэш резолвинга иллюстраций (поддержка параллельного рендера ./assets/v2/* -> fallback ./assets/*)
+// Кэш резолвинга иллюстраций (.webp / .png / .jpg)
 const assetCache = new Map();
-let hasV2AvatarSheet = true;
-let v2AvatarSheetUrl = "./assets/v2/ava_characters_v2.webp";
 
 // Состояние сессии и UI
 let prefs = loadPrefs();
@@ -308,14 +302,10 @@ function formatText(str) {
   return str.replace(/\{(mc(?:_[a-z_]+)?)\}/g, (_, key) => forms[key] || name);
 }
 
-// ==================== УМНАЯ ПОДГРУЗКА V2/V3 АССЕТОВ С FALLBACK БЕЗ 404 ====================
+// ==================== ПОДГРУЗКА АССЕТОВ (.webp / .png / .jpg) ====================
 function probeImage(url) {
   return new Promise((resolve) => {
     if (!url) {
-      resolve(false);
-      return;
-    }
-    if (url.startsWith("./assets/v3/") && !AVAILABLE_V3_ASSETS.has(url)) {
       resolve(false);
       return;
     }
@@ -331,16 +321,10 @@ async function resolveAssetUrl(requestedPath) {
   if (!requestedPath) return null;
   if (assetCache.has(requestedPath)) return assetCache.get(requestedPath);
 
-  const candidates = [];
-  let cursor = requestedPath;
-  const seen = new Set();
-  while (cursor && !seen.has(cursor)) {
-    seen.add(cursor);
-    candidates.push(cursor);
-    if ((cursor.startsWith("./assets/v2/") || cursor.startsWith("./assets/v3/")) && cursor.endsWith(".webp")) {
-      candidates.push(cursor.replace(/\.webp$/, ".png"));
-    }
-    cursor = ASSET_FALLBACKS[cursor] || null;
+  const candidates = [requestedPath];
+  if (requestedPath.endsWith(".webp")) {
+    candidates.push(requestedPath.replace(/\.webp$/, ".png"));
+    candidates.push(requestedPath.replace(/\.webp$/, ".jpg"));
   }
 
   for (const candidate of candidates) {
@@ -356,35 +340,7 @@ async function resolveAssetUrl(requestedPath) {
   return null;
 }
 
-async function initOptionalV2Assets() {
-  const coverEl = document.getElementById("titleCoverImg");
-  if (coverEl) {
-    coverEl.addEventListener(
-      "error",
-      () => {
-        coverEl.src = "./assets/title_cover.webp";
-      },
-      { once: true }
-    );
-  }
-
-  let foundSheet = false;
-  for (const sheetCandidate of [
-    "./assets/v2/ava_characters_v2.webp",
-    "./assets/v2/ava_characters_v2.png"
-  ]) {
-    // eslint-disable-next-line no-await-in-loop
-    if (await probeImage(sheetCandidate)) {
-      hasV2AvatarSheet = true;
-      v2AvatarSheetUrl = sheetCandidate;
-      foundSheet = true;
-      break;
-    }
-  }
-  if (!foundSheet) {
-    hasV2AvatarSheet = false;
-  }
-}
+function initOptionalV2Assets() {}
 
 // ==================== DOM ССЫЛКИ ====================
 const dom = {
