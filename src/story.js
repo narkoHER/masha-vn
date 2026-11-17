@@ -1783,8 +1783,7 @@ export function buildPrologueScript() {
         // *#Трель видеодомофона, на экране появляется Ленка с двумя стаканами кофе*
         location: "ПРИХОЖАЯ • 07:52",
         bg: "./assets/story/intro_6/lenka_intercom.webp",
-        video: "./assets/videos/oneshots/lenka_intercom_5s.mp4",
-        videoMode: "once",
+        video: null,
         cam: "zoom-slow",
         fxShader: "none",
         fx: "intercom",
@@ -1821,7 +1820,7 @@ export function buildPrologueScript() {
         text: "Замок щёлкает, за дверью стучат высокие каблуки, и наши взгляды скрещиваются прямо на пороге. Похоже, спокойного утра в этой квартире не будет."
       },
       {
-        finishPrologue: true
+        goto: "Ch2_1"
       }
     ]
   };

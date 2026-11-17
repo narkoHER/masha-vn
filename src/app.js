@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.4";
-import { FxEngine } from "./fx.js?v=3.4";
+import { sound } from "./audio.js?v=3.5";
+import { FxEngine } from "./fx.js?v=3.5";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,8 +9,9 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.4";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.4";
+} from "./sandbox.js?v=3.5";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.5";
+import { buildChapters2And3Script } from "./chapters_2_3.js?v=3.5";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -22,7 +23,10 @@ const SAVE_KEY = "masha_vn_v2_save";
 const PREFS_KEY = "masha_vn_v2_prefs";
 const MASHA_PIN_CODE = "1408";
 
-const SCRIPT = buildPrologueScript();
+const SCRIPT = {
+  ...buildPrologueScript(),
+  ...buildChapters2And3Script()
+};
 
 // Кэш резолвинга иллюстраций (поддержка параллельного рендера ./assets/v2/* -> fallback ./assets/*)
 const assetCache = new Map();
@@ -1050,7 +1054,9 @@ const SPRITE_POS_CLASSES = [
   "pos-awning-right",
   "pos-booth-seated",
   "pos-living-floor",
-  "pos-bedroom-closet"
+  "pos-bedroom-closet",
+  "pos-kitchen-counter",
+  "pos-park-path"
 ];
 
 function inferSpritePosClass(bgPath, explicitPos) {
@@ -1059,8 +1065,10 @@ function inferSpritePosClass(bgPath, explicitPos) {
   if (bg.includes("cafe_booth") || bg.includes("cafe_malaya")) return "pos-booth-seated";
   if (bg.includes("street_rain") || bg.includes("malaya_bronnaya_ext")) return "pos-awning-right";
   if (bg.includes("gates_rain") || bg.includes("orphanage_gates")) return "pos-sidewalk-right";
+  if (bg.includes("penthouse/kitchen")) return "pos-kitchen-counter";
   if (bg.includes("penthouse/bedroom") || bg.includes("apt_bedroom")) return "pos-bedroom-closet";
   if (bg.includes("penthouse/livingroom") || bg.includes("apt_living")) return "pos-living-floor";
+  if (bg.includes("gorky_park")) return "pos-park-path";
   return "";
 }
 
@@ -1125,6 +1133,13 @@ function applyPortraitAvatar(role, mood) {
   const monoEl = dom.speakerAvatarFallback;
   monoEl.hidden = true;
   spriteEl.hidden = false;
+
+  if (mood === "katya_glow" || (role === "katya" && state.flags?.katya_makeover_stage >= 1)) {
+    spriteEl.style.backgroundImage = 'url("./assets/characters/katya/katya_glow_avatar.webp")';
+    spriteEl.style.backgroundSize = "cover";
+    spriteEl.style.backgroundPosition = "center";
+    return;
+  }
 
   if (mood === "katya" || role === "katya") {
     spriteEl.style.backgroundImage = 'url("./assets/characters/katya/katya_avatar.webp")';
@@ -1422,7 +1437,7 @@ function runCurrentStoryStep() {
     return;
   }
 
-  if (step.finishPrologue) {
+  if (step.finishPrologue || step.finishSeasonAct1) {
     completePrologueFinale();
     return;
   }
@@ -2361,19 +2376,21 @@ function renderEndingSummary() {
   const totalClues = Object.keys(CLUES_CATALOG).length;
 
   const branchNotes = [
-    state.flags.morning_high_loyalty
-      ? "Утро после душа: Маша встретила вас с тёплой улыбкой и доверила выбор образа (получена ★1 Близости)."
-      : "Утро после душа: не хватило очков Доверия — Маша обозначила личные границы под одной крышей.",
-    state.flags.masha_phone_unlocked
-      ? "Рабочий iPhone Маши взломан: раскрыты ужин с Градовым у Артура и тайные поиски Машей следов вашего отца."
-      : "Рабочий iPhone Маши в спальне остался неразблокированным — часть её двойной жизни скрыта.",
-    "Сообщение Кати из архива: часы Виктора чинили в ателье на Старом Арбате, а весной кто-то живой узнавал дату вашего выпуска.",
-    "На пороге квартиры появилась Ленка — лучшая подруга Маши без тормозов и с рентгеновским взглядом."
+    state.flags.ch2_masha_believed_mc
+      ? "Глава 2 (провокация Ленки): Маша раскусила спектакль подруги, но страх за тайну пентхауса заставил вас уйти."
+      : "Глава 2 (провокация Ленки): ссора на пике эмоций пробила трещину в доверии Маши, и вы гордо покинули её дом.",
+    state.flags.lenka_temptation === "yielded"
+      ? "На диване с Ленкой вы на миг поддались соблазну (повышенный Риск), прежде чем щёлкнул замок."
+      : "На диване с Ленкой вы держали дистанцию до самого прихода Маши.",
+    state.flags.katya_lip_touch
+      ? "Глава 3 (Парк Горького): преобразившаяся Катя растаяла от вашего прикосновения на кленовой аллее."
+      : "Глава 3 (Парк Горького): тёплая прогулка с преобразившейся Катей вернула вам почву под ногами.",
+    "Тайна отца раскрыта наполовину: в корпус часов Виктора встроено двойное дно от мастера на Старом Арбате, а у арки ателье вас уже ждут люди Вадима."
   ];
 
   dom.endingSummaryBody.innerHTML = `
     <p class="dialog-lead">
-      Пролог завершён. Все ваши решения, вектор характера и найденные улики сохранены для <strong>Главы 1</strong>.
+      Главы 1–3 завершены! Все решения, вектор характера и собранные улики сохранены для <strong>Главы 4</strong>.
     </p>
     <div class="ending-stat-grid">
       <div class="ending-stat-box">
@@ -2444,6 +2461,37 @@ function startFreshGameWithName(playerName) {
   jumpToStoryBlock("Intro_1");
 }
 
+function startChapterDirectJump(targetBlockId) {
+  const saved = loadSavedGame();
+  const baseName = saved?.player?.name || state.player?.name || "Артём";
+  state = saved ? { ...createInitialState(baseName), ...saved } : createInitialState(baseName);
+  state.started = true;
+  state.prologueCompleted = false;
+  state.mode = "story";
+
+  // Базовые улики и предметы Главы 1, если игрок прыгнул сразу в Главу 2 или 3 с чистого листа
+  if (!state.inventory.includes("katya_cross")) state.inventory.push("katya_cross");
+  for (const baseClue of ["clue_monpansier", "clue_father_week", "clue_realtor_cover", "clue_katya_archive"]) {
+    if (!state.clues.includes(baseClue)) state.clues.push(baseClue);
+  }
+  if (saved == null) {
+    state.masha.loyalty = 2;
+    state.masha.stars = 1;
+  }
+  if (targetBlockId === "Ch3_1" && !state.clues.includes("clue_lenka_penthouse_owner")) {
+    state.clues.push("clue_lenka_penthouse_owner");
+  }
+
+  ephemeralQueue = [];
+  activeChoices = null;
+  lastSpokenContext = "";
+  currentDisplayedBgUrl = "";
+  stopStageVideoDom();
+  setPhoneUnread(false);
+  showScreen("game");
+  jumpToStoryBlock(targetBlockId);
+}
+
 function resumeSavedGame() {
   const saved = loadSavedGame();
   if (!saved) {
@@ -2499,6 +2547,13 @@ function bindEvents() {
     sound.play("tap");
     dom.playerNameInput.value = state.player?.name || "Артём";
     openModalDialog(dom.nameDialog);
+  });
+
+  document.getElementById("titleChapterJump")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-jump-chapter]");
+    if (!btn) return;
+    sound.play("choice");
+    startChapterDirectJump(btn.getAttribute("data-jump-chapter"));
   });
 
   dom.nameForm.addEventListener("submit", (e) => {

@@ -303,6 +303,20 @@ input:focus-visible,
   gap: 0.55rem;
 }
 
+.title-chapter-jump {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.btn-chapter-chip {
+  min-height: 2.55rem;
+  padding: 0.52rem 0.65rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 /* ==================== АВТОРСКИЕ КНОПКИ ==================== */
 .btn-luxury {
   position: relative;
@@ -683,6 +697,20 @@ input:focus-visible,
   height: 58%;
   bottom: 0;
   transform: translateX(-24%);
+}
+
+/* На кухне пентхауса: у мраморного острова */
+.stage-sprite.pos-kitchen-counter {
+  height: 58%;
+  bottom: 0;
+  transform: translateX(-34%);
+}
+
+/* В осеннем Парке Горького: прогулочный план по центру аллеи */
+.stage-sprite.pos-park-path {
+  height: 59%;
+  bottom: 0;
+  transform: translateX(-46%);
 }
 
 /* Слой 4: 60fps Canvas атмосферы */

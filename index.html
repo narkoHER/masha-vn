@@ -13,7 +13,7 @@
     rel="stylesheet"
   />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./styles.css?v=3.4" />
+  <link rel="stylesheet" href="./styles.css?v=3.5" />
 </head>
 <body>
   <div id="appRoot" class="app-shell">
@@ -34,7 +34,7 @@
       </div>
 
       <div class="title-top-bar">
-        <span class="title-chapter-pill">ПРОЛОГ • ЧУЖАЯ МОСКВА</span>
+        <span class="title-chapter-pill">ГЛАВЫ 1–3 • МОСКВА</span>
         <button
           id="titleSoundBtn"
           class="hud-icon-btn"
@@ -68,8 +68,16 @@
             <small id="continueMeta" class="btn-submeta"></small>
           </button>
           <button id="btnNewGame" class="btn-luxury btn-primary" type="button">
-            <span>Начать историю</span>
+            <span>Начать с Главы 1</span>
           </button>
+          <div id="titleChapterJump" class="title-chapter-jump" role="group" aria-label="Быстрый переход к главе">
+            <button type="button" class="btn-luxury btn-secondary btn-chapter-chip" data-jump-chapter="Ch2_1">
+              <span>Глава 2 • Чужой дом</span>
+            </button>
+            <button type="button" class="btn-luxury btn-secondary btn-chapter-chip" data-jump-chapter="Ch3_1">
+              <span>Глава 3 • Стрелки назад</span>
+            </button>
+          </div>
           <button id="btnResetTitle" class="btn-ghost-minimal" type="button" hidden>
             Сбросить прогресс
           </button>
@@ -317,8 +325,8 @@
         <!-- Неблокирующая плашка финала Пролога (если окно итогов закрыто кликом мимо) -->
         <div id="epilogueBar" class="epilogue-bar" hidden>
           <div class="epilogue-bar-text">
-            <span class="epilogue-kicker">ПРОЛОГ ЗАВЕРШЁН</span>
-            <strong>Глава 1 «Утро на троих» — в разработке</strong>
+            <span class="epilogue-kicker">ГЛАВА 3 ЗАВЕРШЕНА</span>
+            <strong>Глава 4 «Арбатская ловушка» — в разработке</strong>
           </div>
           <div class="epilogue-bar-actions">
             <button id="btnReopenEnding" class="btn-epilogue-chip" type="button">Итоги</button>
@@ -851,6 +859,6 @@
   <p class="sr-only">Системные отклики выбора</p>
   <div id="srAnnouncer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
-  <script type="module" src="./src/app.js?v=3.4"></script>
+  <script type="module" src="./src/app.js?v=3.5"></script>
 </body>
 </html>
