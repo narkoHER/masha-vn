@@ -1030,7 +1030,8 @@ export function buildPrologueScript() {
         // *#Раскадровка: у обочины в дожде мигает фарами чёрный Porsche; общий проезд к Сити*
         location: "САДОВОЕ → ПРЕСНЯ • 21:45",
         bg: "./assets/story/intro_4/porsche_ext.webp",
-        video: null,
+        video: "./assets/videos/loops/porsche_rain_drive_5s.mp4",
+        videoMode: "loop",
         sprite: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
@@ -1258,7 +1259,8 @@ export function buildPrologueScript() {
       {
         // *#Общий план от дивана: Маша подходит к панорамному окну Москва-Сити*
         bg: "./assets/story/intro_5/04_window_silhouette.webp",
-        video: null,
+        video: "./assets/videos/oneshots/window_silhouette_5s.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "cloth",
@@ -1362,6 +1364,8 @@ export function buildPrologueScript() {
       },
       {
         bg: "./assets/story/intro_5/08_cards_table_pov.webp",
+        video: "./assets/videos/oneshots/cards_table_pov_5s.mp4",
+        videoMode: "once",
         sprite: null,
         cam: "zoom-slow",
         fx: "cloth",
@@ -1546,7 +1550,8 @@ export function buildPrologueScript() {
         // *#Кадр 1: приоткрытая дверь ванной, пар и силуэт за стеклом душевой*
         location: "ВАННАЯ • 07:32",
         bg: "./assets/story/intro_6/01_shower_door_ajar.webp",
-        video: null,
+        video: "./assets/videos/loops/shower_door_ajar_5s.mp4",
+        videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         ambience: "shower",
@@ -1558,7 +1563,8 @@ export function buildPrologueScript() {
       {
         // *#Кадр 2: нижний контровой ракурс сквозь пар в солнечных лучах*
         bg: "./assets/story/intro_6/02_shower_low_angle.webp",
-        video: null,
+        video: "./assets/videos/oneshots/shower_low_angle_5s.mp4",
+        videoMode: "once",
         cam: "pan-up-reveal",
         fxShader: "shower_steam",
         fx: "heartbeat",
@@ -1570,6 +1576,8 @@ export function buildPrologueScript() {
       {
         // *#Кадр 3: верхний ракурс под тропической лейкой*
         bg: "./assets/story/intro_6/03_shower_high_angle.webp",
+        video: "./assets/videos/loops/shower_high_angle_5s.mp4",
+        videoMode: "loop",
         cam: "zoom-slow",
         fxShader: "shower_steam",
         fx: "heartbeat",
@@ -1625,6 +1633,10 @@ export function buildPrologueScript() {
 
     Intro_6_shower_leave: [
       {
+        location: "ЗА ДВЕРЬЮ ВАННОЙ • 07:34",
+        bg: "./assets/locations/penthouse/livingroom/morning_sun.webp",
+        video: null,
+        fxShader: "morning_sun",
         fx: "door",
         role: "mc",
         speaker: "{mc}",
