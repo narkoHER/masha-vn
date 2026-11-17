@@ -1,5 +1,5 @@
-import { sound } from "./audio.js?v=3.3";
-import { FxEngine } from "./fx.js?v=3.3";
+import { sound } from "./audio.js?v=3.4";
+import { FxEngine } from "./fx.js?v=3.4";
 import {
   ITEMS_CATALOG,
   CLUES_CATALOG,
@@ -9,8 +9,8 @@ import {
   countExploredSandboxGoals,
   getHotspotSequence,
   buildPostPhoneUnlockSequence
-} from "./sandbox.js?v=3.3";
-import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.3";
+} from "./sandbox.js?v=3.4";
+import { AVAILABLE_V3_ASSETS, ASSET_FALLBACKS, buildPrologueScript } from "./story.js?v=3.4";
 
 // Условная подгрузка полифилла Popover API строго по современному стандарту
 let popoverReadyPromise = Promise.resolve();
@@ -671,12 +671,11 @@ function flushDeferredToasts() {
   });
 }
 
-async function renderPopoverToast(message) {
-  await popoverReadyPromise;
+function renderPopoverToast(message) {
   if (!dom.toastRegion) return;
 
-  // Ограничиваем одновременно до 3 компактных тостов
-  const active = dom.toastRegion.querySelectorAll(".vn-toast");
+  // Ограничиваем одновременно до 3 компактных тостов внутри #appRoot
+  const active = dom.toastRegion.querySelectorAll(".vn-toast:not([data-closing])");
   if (active.length >= 3) {
     dismissToastElement(active[0]);
   }
@@ -687,8 +686,7 @@ async function renderPopoverToast(message) {
   const toastEl = document.createElement("div");
   toastEl.id = toastId;
   toastEl.className = "vn-toast";
-  // Строго через контент-атрибут, а не IDL .popover
-  toastEl.setAttribute("popover", "manual");
+  toastEl.setAttribute("role", "status");
 
   const labelSpan = document.createElement("span");
   labelSpan.className = "vn-toast-label";
@@ -706,8 +704,6 @@ async function renderPopoverToast(message) {
   closeBtn.type = "button";
   closeBtn.className = "vn-toast-close";
   closeBtn.setAttribute("aria-label", "Скрыть уведомление");
-  closeBtn.setAttribute("popovertarget", toastId);
-  closeBtn.setAttribute("popovertargetaction", "hide");
   closeBtn.innerHTML = `
     <svg class="icon-svg-sm" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M18 6L6 18M6 6l12 12" />
@@ -717,16 +713,16 @@ async function renderPopoverToast(message) {
   toastEl.append(labelSpan, closeBtn);
   dom.toastRegion.appendChild(toastEl);
 
-  try {
-    toastEl.showPopover?.();
-  } catch {}
+  requestAnimationFrame(() => {
+    toastEl.classList.add("is-open");
+  });
 
   announceForScreenReader(message);
 
   let timerId = null;
   const startTimer = () => {
     clearTimeout(timerId);
-    timerId = setTimeout(() => dismissToastElement(toastEl), 3800);
+    timerId = setTimeout(() => dismissToastElement(toastEl), 3600);
   };
   const pauseTimer = () => clearTimeout(timerId);
 
@@ -735,19 +731,11 @@ async function renderPopoverToast(message) {
   toastEl.addEventListener("focusin", pauseTimer);
   toastEl.addEventListener("focusout", startTimer);
 
-  toastEl.addEventListener("toggle", (e) => {
-    if (e.newState === "closed") {
-      clearTimeout(timerId);
-      restoreFocusFromToast(toastEl);
-      setTimeout(() => toastEl.remove(), 260);
-    }
-  });
-
   closeBtn.addEventListener("click", (e) => {
-    if (!supportsTopLayerExit()) {
-      e.preventDefault();
-      dismissToastElement(toastEl);
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    clearTimeout(timerId);
+    dismissToastElement(toastEl);
   });
 
   startTimer();
@@ -771,17 +759,12 @@ function restoreFocusFromToast(toastEl) {
 
 function dismissToastElement(toastEl) {
   if (!toastEl || !toastEl.isConnected || toastEl.hasAttribute("data-closing")) return;
+  toastEl.setAttribute("data-closing", "");
+  toastEl.classList.remove("is-open");
   restoreFocusFromToast(toastEl);
-  closeTopLayer(toastEl, () => {
-    try {
-      if (typeof toastEl.hidePopover === "function") {
-        toastEl.hidePopover();
-        setTimeout(() => toastEl.remove(), 260);
-        return;
-      }
-    } catch {}
+  setTimeout(() => {
     toastEl.remove();
-  });
+  }, 220);
 }
 
 // ==================== SCRIPT API (ДЛЯ STORY.JS И SANDBOX.JS) ====================
@@ -1062,11 +1045,37 @@ async function applyStageBackground(bgPath, camMode = "none") {
   currentDisplayedBgUrl = resolved;
 }
 
-async function applyStageSprite(spritePath) {
+const SPRITE_POS_CLASSES = [
+  "pos-sidewalk-right",
+  "pos-awning-right",
+  "pos-booth-seated",
+  "pos-living-floor",
+  "pos-bedroom-closet"
+];
+
+function inferSpritePosClass(bgPath, explicitPos) {
+  if (explicitPos) return `pos-${explicitPos}`;
+  const bg = String(bgPath || state.lastBg || "");
+  if (bg.includes("cafe_booth") || bg.includes("cafe_malaya")) return "pos-booth-seated";
+  if (bg.includes("street_rain") || bg.includes("malaya_bronnaya_ext")) return "pos-awning-right";
+  if (bg.includes("gates_rain") || bg.includes("orphanage_gates")) return "pos-sidewalk-right";
+  if (bg.includes("penthouse/bedroom") || bg.includes("apt_bedroom")) return "pos-bedroom-closet";
+  if (bg.includes("penthouse/livingroom") || bg.includes("apt_living")) return "pos-living-floor";
+  return "";
+}
+
+function syncSpritePlacement(explicitPos) {
+  dom.stageSprite.classList.remove(...SPRITE_POS_CLASSES);
+  const cls = inferSpritePosClass(state.lastBg, explicitPos);
+  if (cls) dom.stageSprite.classList.add(cls);
+}
+
+async function applyStageSprite(spritePath, explicitPos) {
   state.lastSprite = spritePath;
   if (!spritePath) {
     dom.stageSprite.hidden = true;
     dom.stageSprite.removeAttribute("src");
+    dom.stageSprite.classList.remove(...SPRITE_POS_CLASSES);
     return;
   }
   const resolved = await resolveAssetUrl(spritePath);
@@ -1074,6 +1083,7 @@ async function applyStageSprite(spritePath) {
     dom.stageSprite.hidden = true;
     return;
   }
+  syncSpritePlacement(explicitPos);
   dom.stageSprite.src = resolved;
   dom.stageSprite.hidden = false;
 }
@@ -1305,6 +1315,9 @@ function applyStepPresentation(step) {
 
   if (step.bg) {
     applyStageBackground(step.bg, step.cam || "none");
+    if (!dom.stageSprite.hidden && !Object.prototype.hasOwnProperty.call(step, "sprite")) {
+      syncSpritePlacement(step.spritePos);
+    }
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "video")) {
@@ -1314,7 +1327,7 @@ function applyStepPresentation(step) {
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "sprite")) {
-    applyStageSprite(step.sprite);
+    applyStageSprite(step.sprite, step.spritePos);
   }
 
   if (Object.prototype.hasOwnProperty.call(step, "prop")) {
@@ -2700,7 +2713,18 @@ function bindEvents() {
 }
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+function preventDoubleTapZoom() {
+  document.addEventListener("dblclick", (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener("gesturestart", (e) => {
+    e.preventDefault();
+  }, { passive: false });
+}
+
 function bootstrap() {
+  preventDoubleTapZoom();
   initTelegramMiniApp();
   sound.setMuted(prefs.muted);
   syncSoundUi();

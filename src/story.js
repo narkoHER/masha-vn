@@ -175,8 +175,7 @@ export function buildPrologueScript() {
       {
         // *#Крупный план запястья ГГ: старые механические часы отца с трещиной на стекле*
         bg: "./assets/story/intro_1/doc_watch.webp",
-        video: "./assets/videos/oneshots/doc_watch_5s.mp4",
-        videoMode: "once",
+        video: null,
         cam: "zoom-slow",
         fxShader: "rain_exterior",
         role: "mct",
@@ -1193,7 +1192,8 @@ export function buildPrologueScript() {
         // *#01:42 ночи: замок тихо пищит, в проёме прихожей появляется Маша в сапфировом платье*
         location: "МОСКВА • 01:42",
         bg: "./assets/story/intro_5/01_doorway_wide.webp",
-        video: null,
+        video: "./assets/videos/oneshots/doorway_arrival_5s.mp4",
+        videoMode: "once",
         cam: "zoom-slow",
         fxShader: "moscow_city_calm",
         fx: "lock_beep",

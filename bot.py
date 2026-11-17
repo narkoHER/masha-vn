@@ -38,9 +38,9 @@ def load_dotenv(env_path: Path) -> None:
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
-WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://narkoher.github.io/masha-vn/?v=3.3").strip()
+WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://narkoher.github.io/masha-vn/?v=3.4").strip()
 if "v=" not in WEBAPP_URL:
-    WEBAPP_URL = f"{WEBAPP_URL.rstrip('/')}/?v=3.3"
+    WEBAPP_URL = f"{WEBAPP_URL.rstrip('/')}/?v=3.4"
 
 if not BOT_TOKEN:
     sys.exit("Ошибка: задайте BOT_TOKEN в файле .env или переменных окружения.")
